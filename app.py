@@ -999,7 +999,7 @@ def attendance_scan():
 @app.route('/get_attendance', methods=['GET'])
 def get_attendance():
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
     # Read filters from query string
     month = request.args.get('month')      # expecting "YYYY-MM"
@@ -1214,8 +1214,3 @@ def customer_menu():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
-
-
-
-
