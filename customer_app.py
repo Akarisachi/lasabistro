@@ -8,18 +8,20 @@ import random
 from datetime import datetime, timedelta
 from customer_ai import handle_customer_ai_chat
 from mailer import send_message
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__, template_folder="main")  # if your HTML is in a folder called 'main'
 CORS(app)  # allow the frontend to talk to this server
 
 # DB connection helper - adjust credentials if necessary
 def get_db_connection():
-    return mysql.connector.connect(
-        host=os.environ.get("postgresql://restaurant_db_pj8q_user:hsImkcb315dSQsTsV7Ga1VUdebMzOw9d@dpg-d50morfgi27c73ap9510-a:5432/restaurant_db_pj8q", "localhost"),       # Render DB host
-        user=os.environ.get("restaurant_db_pj8q_user", "root"),           # DB username
-        password=os.environ.get("hsImkcb315dSQsTsV7Ga1VUdebMzOw9d", ""),       # DB password
-        database=os.environ.get("restaurant_db_pj8q", "restaurant_db"),  # DB name
-        auth_plugin='mysql_native_password'
+    return psycopg2.connect(
+        host="dpg-d50morfgi27c73ap9510-a.oregon-postgres.render.com",
+        database="restaurant_db_pj8q",
+        user="restaurant_db_pj8q_user",
+        password="hsImkcb315dSQsTsV7Ga1VUdebMzOw9d",
+        cursor_factory=RealDictCursor  # optional: returns rows as dictionaries
     )
 @app.route('/')
 def home():
@@ -411,5 +413,6 @@ def send_message():
 if __name__ == "__main__":
     # Run on port 5001 for customer backend
     app.run(host="0.0.0.0", port=5001, debug=True)
+
 
 
