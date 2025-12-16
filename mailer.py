@@ -7,8 +7,8 @@ from email.mime.multipart import MIMEMultipart
 EMAIL_ADDRESS = "sachikia7@gmail.com"
 EMAIL_PASSWORD = "ppjwklzgaecmmrko"  # Replace with your Gmail App Password
 
-email_app = Flask(__name__)
-CORS(email_app)
+app = Flask(__name__)
+CORS(app)
 
 @email_app.route("/send_message", methods=["POST"])
 def send_message():
@@ -52,3 +52,4 @@ Message:
 
 if __name__ == "__main__":
     email_app.run(host="0.0.0.0", port=5002, debug=True)
+
