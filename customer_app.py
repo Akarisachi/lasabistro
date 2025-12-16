@@ -8,21 +8,19 @@ import random
 from datetime import datetime, timedelta
 from customer_ai import handle_customer_ai_chat
 from mailer import send_message
-import psycopg2
-from psycopg2.extras import RealDictCursor
+import psycopg
+from psycopg.rows import dict_row
 
 app = Flask(__name__, template_folder="main")  # if your HTML is in a folder called 'main'
 CORS(app)  # allow the frontend to talk to this server
 
 # DB connection helper - adjust credentials if necessary
 def get_db_connection():
-    return psycopg2.connect(
-        host="dpg-d50morfgi27c73ap9510-a.oregon-postgres.render.com",
-        database="restaurant_db_pj8q",
-        user="restaurant_db_pj8q_user",
-        password="hsImkcb315dSQsTsV7Ga1VUdebMzOw9d",
-        cursor_factory=RealDictCursor  # optional: returns rows as dictionaries
+    return psycopg.connect(
+        "postgresql://restaurant_db_pj8q_user:hsImkcb315dSQsTsV7Ga1VUdebMzOw9d@dpg-d50morfgi27c73ap9510-a.oregon-postgres.render.com/restaurant_db_pj8q",
+        row_factory=dict_row
     )
+
 @app.route('/')
 def home():
     return render_template('index.html') 
@@ -68,7 +66,7 @@ def signup():
 
     # Insert into DB (check duplicate username)
     db = get_db_connection()
-    cur = db.cursor(dictionary=True)
+    cur = db.cursor()
     try:
         # check existing username
         cur.execute("SELECT customer_id FROM customers WHERE username = %s", (username,))
@@ -106,7 +104,7 @@ def login():
         return jsonify({"status":"error","message":"Username and password required"}), 400
 
     db = get_db_connection()
-    cur = db.cursor(dictionary=True)
+    cur = db.cursor()
     try:
         cur.execute("SELECT customer_id, username, password_hash, address, contact FROM customers WHERE username = %s", (username,))
         user = cur.fetchone()
@@ -141,7 +139,7 @@ def get_user():
         return jsonify({"status":"error", "message":"Username is required"}), 400
 
     db = get_db_connection()
-    cur = db.cursor(dictionary=True)
+    cur = db.cursor()
     try:
         cur.execute(
             "SELECT customer_id, username, address, contact FROM customers WHERE username=%s",
@@ -413,6 +411,3 @@ def send_message():
 if __name__ == "__main__":
     # Run on port 5001 for customer backend
     app.run(host="0.0.0.0", port=5001, debug=True)
-
-
-
