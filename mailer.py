@@ -19,7 +19,7 @@ def send_message():
 
     # Create the email
     msg = MIMEMultipart()
-    msg["From"] = EMAIL_ADDRESS          # your Gmail
+    msg["From"] = customer_email          # your Gmail
     msg["To"] = EMAIL_ADDRESS            # where you receive the messages
     msg["Reply-To"] = customer_email     # customer email
     msg["Subject"] = f"New Contact Message from {name}"
@@ -51,5 +51,6 @@ Message:
         return jsonify({"success": False, "message": "Failed to send email"}), 500
 
 if __name__ == "__main__":
-    email_app.run(host="0.0.0.0", port=5002, debug=True)
+    app.run(host="0.0.0.0", port=5002, debug=True)
+
 
