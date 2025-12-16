@@ -75,7 +75,7 @@ def owner_dashboard():
 @app.route('/dashboard_stats', methods=['GET'])
 def dashboard_stats():
     db = get_db_connection()
-        cursor = db.cursor()
+    cursor = db.cursor()
 
 
     today = datetime.today()
@@ -1215,5 +1215,6 @@ def customer_menu():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
