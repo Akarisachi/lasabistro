@@ -11,6 +11,8 @@ import traceback  # Ensure this is added
 from collections import Counter
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, session, redirect, url_for
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__, template_folder="main", static_folder="static")
 CORS(app)
@@ -26,12 +28,14 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # 🔗 Database Connection
+
 def get_db_connection():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="",
-        database="restaurant_db"
+    return psycopg2.connect(
+        host="dpg-d50morfgi27c73ap9510-a.oregon-postgres.render.com",
+        database="restaurant_db_pj8q",
+        user="restaurant_db_pj8q_user",
+        password="hsImkcb315dSQsTsV7Ga1VUdebMzOw9d",
+        cursor_factory=RealDictCursor  # optional: returns rows as dictionaries
     )
 
 HARDCODED_USER = "admin"
@@ -1197,3 +1201,4 @@ def customer_menu():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
