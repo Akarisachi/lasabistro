@@ -228,7 +228,7 @@ def dashboard_stats():
 @app.route('/menu', methods=['GET'])
 def get_menu():
     db = get_db_connection()
-        cursor = db.cursor()
+    cursor = db.cursor()
 
 
     # Get menu items
@@ -374,7 +374,7 @@ def update_menu(id):
 @app.route('/menu/categories', methods=['GET'])
 def get_menu_categories():
     db = get_db_connection()
-        cursor = db.cursor()
+    cursor = db.cursor()
 
     cursor.execute("SELECT DISTINCT category FROM menu")
     categories = [row['category'] for row in cursor.fetchall()]
@@ -387,7 +387,7 @@ def get_menu_categories():
 @app.route('/reservations', methods=['GET'])
 def get_reservations():
     db = get_db_connection()
-        cursor = db.cursor()
+    cursor = db.cursor()
 
 
     cursor.execute("""
@@ -440,7 +440,7 @@ def add_reservation():
 @app.route('/available_tables', methods=['GET'])
 def available_tables():
     db = get_db_connection()
-        cursor = db.cursor()
+    cursor = db.cursor()
 
 
     reservation_date = request.args.get('date')
@@ -484,7 +484,7 @@ def delete_reservation(id):
 @app.route('/reviews', methods=['GET'])
 def get_reviews():
     db = get_db_connection()
-        cursor = db.cursor()
+    cursor = db.cursor()
 
     cursor.execute("SELECT * FROM reviews ORDER BY review_time DESC")
     data = cursor.fetchall()
@@ -497,7 +497,7 @@ def get_reviews():
 @app.route('/inventory', methods=['GET'])
 def get_inventory():
     db = get_db_connection()
-        cursor = db.cursor()
+    cursor = db.cursor()
 
     cursor.execute("SELECT * FROM inventory")
     data = cursor.fetchall()
@@ -508,7 +508,7 @@ def get_inventory():
 @app.route('/inventory/<int:id>', methods=['GET'])
 def get_single_inventory(id):
     db = get_db_connection()
-        cursor = db.cursor()
+    cursor = db.cursor()
 
     cursor.execute("SELECT * FROM inventory WHERE id=%s", (id,))
     data = cursor.fetchone()
@@ -523,7 +523,7 @@ def get_single_inventory(id):
 def add_inventory():
     try:
         db = get_db_connection()
-            cursor = db.cursor()
+        cursor = db.cursor()
 
 
         name = request.form.get('name')
@@ -566,7 +566,7 @@ def add_inventory():
 def update_inventory(id):
     try:
         db = get_db_connection()
-            cursor = db.cursor()
+        cursor = db.cursor()
 
 
         name = request.form.get('name')
@@ -614,7 +614,7 @@ def delete_inventory(id):
 @app.route('/orders', methods=['GET'])
 def get_orders():
     db = get_db_connection()
-        cursor = db.cursor()
+    cursor = db.cursor()
 
 
     cursor.execute("""
@@ -719,7 +719,7 @@ def create_order():
     table_number = data.get('table_number') if type_ == 'Walkin' else None
 
     db = get_db_connection()
-        cursor = db.cursor()
+    cursor = db.cursor()
 
 
     total = 0
@@ -809,7 +809,7 @@ def create_order():
 @app.route("/staff", methods=["GET"])
 def get_staff():
     db = get_db_connection()
-        cursor = db.cursor()
+    cursor = db.cursor()
 
     cursor.execute("SELECT * FROM staff ORDER BY id DESC")
     data = cursor.fetchall()
@@ -861,7 +861,7 @@ def add_staff():
 @app.route("/staff/<int:id>", methods=["GET"])
 def get_single_staff(id):
     db = get_db_connection()
-        cursor = db.cursor()
+    cursor = db.cursor()
 
     cursor.execute("SELECT * FROM staff WHERE id = %s", (id,))
     staff = cursor.fetchone()
@@ -1079,7 +1079,7 @@ def add_announcement():
         return jsonify({"error":"Missing required fields"}), 400
 
     db = get_db_connection()
-        cursor = db.cursor()
+    cursor = db.cursor()
 
 
     if type_ in ['Sale','Promotion'] and target:
@@ -1125,7 +1125,7 @@ def add_announcement():
 @app.route('/announcements', methods=['GET'])
 def get_announcements():
     db = get_db_connection()
-        cursor = db.cursor()
+    cursor = db.cursor()
 
 
     # Update status automatically
@@ -1215,6 +1215,7 @@ def customer_menu():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
 
