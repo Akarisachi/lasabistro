@@ -1,7 +1,6 @@
 # customer_app.py
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
-import mysql.connector
 from werkzeug.security import generate_password_hash, check_password_hash
 import time
 import random
@@ -411,4 +410,5 @@ def send_message():
 if __name__ == "__main__":
     # Run on port 5001 for customer backend
     app.run(host="0.0.0.0", port=5001, debug=True)
+
 
