@@ -11,8 +11,8 @@ import traceback  # Ensure this is added
 from collections import Counter
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, session, redirect, url_for
-import psycopg2
-from psycopg2.extras import RealDictCursor
+import psycopg
+from psycopg.rows import dict_row
 
 app = Flask(__name__, template_folder="main", static_folder="static")
 CORS(app)
@@ -30,12 +30,9 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # 🔗 Database Connection
 
 def get_db_connection():
-    return psycopg2.connect(
-        host="dpg-d50morfgi27c73ap9510-a.oregon-postgres.render.com",
-        database="restaurant_db_pj8q",
-        user="restaurant_db_pj8q_user",
-        password="hsImkcb315dSQsTsV7Ga1VUdebMzOw9d",
-        cursor_factory=RealDictCursor  # optional: returns rows as dictionaries
+    return psycopg.connect(
+        "postgresql://restaurant_db_pj8q_user:hsImkcb315dSQsTsV7Ga1VUdebMzOw9d@dpg-d50morfgi27c73ap9510-a.oregon-postgres.render.com/restaurant_db_pj8q",
+        row_factory=dict_row
     )
 
 HARDCODED_USER = "admin"
@@ -78,7 +75,8 @@ def owner_dashboard():
 @app.route('/dashboard_stats', methods=['GET'])
 def dashboard_stats():
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+        cursor = db.cursor()
+
 
     today = datetime.today()
 
@@ -230,7 +228,8 @@ def dashboard_stats():
 @app.route('/menu', methods=['GET'])
 def get_menu():
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+        cursor = db.cursor()
+
 
     # Get menu items
     cursor.execute("SELECT * FROM menu ORDER BY id")
@@ -375,7 +374,8 @@ def update_menu(id):
 @app.route('/menu/categories', methods=['GET'])
 def get_menu_categories():
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+        cursor = db.cursor()
+
     cursor.execute("SELECT DISTINCT category FROM menu")
     categories = [row['category'] for row in cursor.fetchall()]
     cursor.close()
@@ -387,7 +387,8 @@ def get_menu_categories():
 @app.route('/reservations', methods=['GET'])
 def get_reservations():
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+        cursor = db.cursor()
+
 
     cursor.execute("""
         SELECT * FROM reservations 
@@ -439,7 +440,8 @@ def add_reservation():
 @app.route('/available_tables', methods=['GET'])
 def available_tables():
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+        cursor = db.cursor()
+
 
     reservation_date = request.args.get('date')
     reservation_time = request.args.get('time')
@@ -482,7 +484,8 @@ def delete_reservation(id):
 @app.route('/reviews', methods=['GET'])
 def get_reviews():
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+        cursor = db.cursor()
+
     cursor.execute("SELECT * FROM reviews ORDER BY review_time DESC")
     data = cursor.fetchall()
     cursor.close()
@@ -494,7 +497,8 @@ def get_reviews():
 @app.route('/inventory', methods=['GET'])
 def get_inventory():
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+        cursor = db.cursor()
+
     cursor.execute("SELECT * FROM inventory")
     data = cursor.fetchall()
     cursor.close()
@@ -504,7 +508,8 @@ def get_inventory():
 @app.route('/inventory/<int:id>', methods=['GET'])
 def get_single_inventory(id):
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+        cursor = db.cursor()
+
     cursor.execute("SELECT * FROM inventory WHERE id=%s", (id,))
     data = cursor.fetchone()
     cursor.close()
@@ -518,7 +523,8 @@ def get_single_inventory(id):
 def add_inventory():
     try:
         db = get_db_connection()
-        cursor = db.cursor(dictionary=True)
+            cursor = db.cursor()
+
 
         name = request.form.get('name')
         quantity = float(request.form.get('quantity'))
@@ -560,7 +566,8 @@ def add_inventory():
 def update_inventory(id):
     try:
         db = get_db_connection()
-        cursor = db.cursor(dictionary=True)
+            cursor = db.cursor()
+
 
         name = request.form.get('name')
         quantity = float(request.form.get('quantity'))
@@ -607,7 +614,8 @@ def delete_inventory(id):
 @app.route('/orders', methods=['GET'])
 def get_orders():
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+        cursor = db.cursor()
+
 
     cursor.execute("""
         SELECT o.id, o.username, o.total, o.status, o.created_at,
@@ -654,7 +662,8 @@ def update_order(order_id):
     if not new_status:
         return jsonify({"status":"error","message":"Missing status"}), 400
 
-    cursor = db.cursor(dictionary=True)
+        cursor = db.cursor()
+
 
     # Fetch previous status to prevent double deduction
     cursor.execute("SELECT status FROM orders WHERE id=%s", (order_id,))
@@ -710,7 +719,8 @@ def create_order():
     table_number = data.get('table_number') if type_ == 'Walkin' else None
 
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+        cursor = db.cursor()
+
 
     total = 0
     order_items = []
@@ -799,7 +809,8 @@ def create_order():
 @app.route("/staff", methods=["GET"])
 def get_staff():
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+        cursor = db.cursor()
+
     cursor.execute("SELECT * FROM staff ORDER BY id DESC")
     data = cursor.fetchall()
     cursor.close()
@@ -850,7 +861,8 @@ def add_staff():
 @app.route("/staff/<int:id>", methods=["GET"])
 def get_single_staff(id):
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+        cursor = db.cursor()
+
     cursor.execute("SELECT * FROM staff WHERE id = %s", (id,))
     staff = cursor.fetchone()
     cursor.close()
@@ -905,7 +917,7 @@ def attendance_scan():
     staff_id = int(m.group(1))
 
     db = get_db_connection()
-    cur = db.cursor(dictionary=True)
+    cur = db.cursor()
 
     # FIXED: correct columns!
     cur.execute("SELECT id, name FROM staff WHERE id = %s", (staff_id,))
@@ -1067,7 +1079,8 @@ def add_announcement():
         return jsonify({"error":"Missing required fields"}), 400
 
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+        cursor = db.cursor()
+
 
     if type_ in ['Sale','Promotion'] and target:
         if target.startswith('cat:'):
@@ -1112,7 +1125,8 @@ def add_announcement():
 @app.route('/announcements', methods=['GET'])
 def get_announcements():
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+        cursor = db.cursor()
+
 
     # Update status automatically
     cursor.execute("""
@@ -1166,7 +1180,7 @@ def delete_announcement(announcement_id):
 @app.route('/customer/menu', methods=['GET'])
 def customer_menu():
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor()
 
     cursor.execute("""
         SELECT 
@@ -1201,4 +1215,5 @@ def customer_menu():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
