@@ -392,7 +392,7 @@ def send_message():
         return jsonify({"success": False, "message": "Invalid data"}), 400
 
     try:
-        send_contact_email(
+        send_message(
             name=data.get("name"),
             customer_email=data.get("email"),
             message=data.get("message")
@@ -411,3 +411,4 @@ def send_message():
 if __name__ == "__main__":
     # Run on port 5001 for customer backend
     app.run(host="0.0.0.0", port=5001, debug=True)
+
