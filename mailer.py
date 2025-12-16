@@ -10,7 +10,7 @@ EMAIL_PASSWORD = "ppjwklzgaecmmrko"  # Replace with your Gmail App Password
 app = Flask(__name__)
 CORS(app)
 
-@email_app.route("/send_message", methods=["POST"])
+@app.route("/send_message", methods=["POST"])
 def send_message():
     data = request.json
     name = data.get("name")
@@ -52,5 +52,6 @@ Message:
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5002, debug=True)
+
 
 
