@@ -1,5 +1,4 @@
 from flask import Flask, jsonify, request, render_template
-import mysql.connector
 from flask_cors import CORS
 import os
 import qrcode
@@ -1215,6 +1214,7 @@ def customer_menu():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
 
