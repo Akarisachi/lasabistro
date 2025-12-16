@@ -15,10 +15,10 @@ CORS(app)  # allow the frontend to talk to this server
 # DB connection helper - adjust credentials if necessary
 def get_db_connection():
     return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="",
-        database="restaurant_db",
+        host=os.environ.get("postgresql://restaurant_db_pj8q_user:hsImkcb315dSQsTsV7Ga1VUdebMzOw9d@dpg-d50morfgi27c73ap9510-a:5432/restaurant_db_pj8q", "localhost"),       # Render DB host
+        user=os.environ.get("restaurant_db_pj8q_user", "root"),           # DB username
+        password=os.environ.get("hsImkcb315dSQsTsV7Ga1VUdebMzOw9d", ""),       # DB password
+        database=os.environ.get("restaurant_db_pj8q", "restaurant_db"),  # DB name
         auth_plugin='mysql_native_password'
     )
 @app.route('/')
@@ -411,4 +411,5 @@ def send_message():
 if __name__ == "__main__":
     # Run on port 5001 for customer backend
     app.run(host="0.0.0.0", port=5001, debug=True)
+
 
