@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lasa Bistro — Customer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/customer.css') }}" />
+</head>
+<body>
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-top">
+      <h2>Lasa Bistro</h2>
+      <button id="closeSidebar" class="icon-btn">✕</button>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#" onclick="showContent('home'); toggleSidebar()">Home</a>
+      <a href="#" onclick="showContent('menu'); toggleSidebar()">Menu</a>
+      <a href="#" onclick="showContent('myOrders'); toggleSidebar()">Orders</a>
+      <a href="#" onclick="showContent('transactions'); toggleSidebar()">Transactions</a>
+      <a href="#" onclick="logout()">Logout</a>
+    </nav>
+  </aside>
+  <div id="sidebarOverlay" class="overlay" onclick="toggleSidebar()"></div>
+  <div class="app-container">
+    <header class="topbar">
+      <div class="top-left">
+        <button id="menuToggle" class="menu-btn" title="Menu">☰</button>
+        <div class="brand">Order <span>something</span></div>
+      </div>
+
+      <div class="top-center">
+        <div class="search-wrap">
+          <input id="searchInput" type="search" placeholder="Search for dishes, e.g. pizza, salad..." />
+        </div>
+        <div id="announcementBar" class="announcement-bar">
+          Today’s special: 20% off all pastas! 🍝
+        </div>
+      </div>
+
+      <div class="top-right">
+        <button id="darkModeToggle" class="icon-btn" title="Toggle Dark Mode">🌓</button>
+        <button class="icon-btn notif-btn" title="Notifications" onclick="openCart()">🛒 <span id="cartBadge" class="badge">0</span></button>
+        <div class="profile" onclick="openProfileModal()" title="Profile">
+          <img id="profileAvatar" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="avatar">
+          <span id="greetingName" class="profile-name">Customer</span>
+        </div>
+      </div>
+    </header>
+<main class="layout">
+  <section class="main-left">
+<section id="home" class="content-section home-section">
+  <div class="home-block">
+    <div class="home-block-head">
+      <h3>🔥 Today’s Deals</h3>
+      <small>Limited-time discounts</small>
+    </div>
+    <div id="homeDealsGrid" class="menu-grid"></div>
+  </div>
+
+  <div class="home-block">
+    <div class="home-block-head">
+      <h3>⭐ Popular Dishes</h3>
+      <small>Most ordered by customers</small>
+    </div>
+    <div id="homePopularGrid" class="menu-grid"></div>
+  </div>
+
+</section>
+
+<section id="menu" class="content-section" style="display:none">
+        <div class="categories-row" id="categoriesRow"></div>
+
+  <h3>Menu</h3>
+  <div id="menuCategoryTabs" class="section-tabs"></div>
+  <div id="menuGridFull" class="menu-grid"></div>
+</section>
+
+<section id="myOrders" class="content-section" style="display:none;">
+  <h2>My Ongoing Orders</h2>
+  <table class="orders-table" id="ongoingOrdersTable">
+    <thead>
+      <tr>
+        <th>Order ID</th>
+        <th>Items</th>
+        <th>Total</th>
+        <th>Status</th>
+        <th>Order Time</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="5" style="text-align:center">Loading orders...</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="transactions" class="content-section" style="display:none;">
+  <h2>Past Orders / Transactions</h2>
+  <table class="orders-table" id="transactionsTable">
+    <thead>
+      <tr>
+        <th>Order ID</th>
+        <th>Items</th>
+        <th>Total</th>
+        <th>Status</th>
+        <th>Order Time</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="4" style="text-align:center">Loading transactions...</td></tr>
+    </tbody>
+  </table>
+</section>
+
+    <section id="profile" class="content-section" style="display:none">
+      <h3>Profile</h3>
+    </section>
+  </section>
+
+  <aside class="order-panel">
+    <div class="order-card">
+      <div class="order-head">
+        <h4>My order</h4>
+        <small id="orderCountText">0 items</small>
+      </div>
+      <ul id="orderList" class="order-list">
+        <li class="empty">No items yet — add something from the menu</li>
+      </ul>
+      <div class="order-foot">
+        <div class="totals">
+          <div><span>Delivery</span><span id="deliveryMode"> Pickup</span></div>
+          <div><span>Total </span><strong id="orderTotal"> ₱0.00</strong></div>
+        </div>
+        <div class="order-actions">
+          <button id="checkoutBtn" class="btn primary" onclick="checkout()">Checkout</button>
+          <button class="btn secondary" onclick="openCart()">View Cart</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+</main>
+
+  </div>
+ <div id="cartModalBg" class="modal-bg">
+    <div class="modal modal-cart">
+      <h3>Your cart</h3>
+      <div class="cart-scroll">
+        <table class="cart-table">
+          <thead><tr><th></th><th>Item</th><th>Qty</th><th>Price</th></tr></thead>
+          <tbody id="cartItems"></tbody>
+        </table>
+      </div>
+      <div class="cart-footer">
+        <div class="cart-total">Total: <strong id="cartTotalText">₱0.00</strong></div>
+        <div class="cart-buttons">
+          <button class="btn primary" onclick="checkout()">Place Order</button>
+          <button class="btn secondary" onclick="closeCart()">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="profileModalBg" class="modal-bg">
+    <div class="modal modal-profile">
+      <h3>Profile</h3>
+      <p>User: <strong id="profileUsername">Customer</strong></p>
+      <div class="profile-actions">
+        <button class="btn" onclick="viewProfile()">View Profile</button>
+        <button class="btn" onclick="logout()">Logout</button>
+        <button class="btn secondary" onclick="closeProfileModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+<div id="profileDetailsModalBg" class="modal-bg">
+  <div class="modal modal-profile-details">
+    <h3>My Profile</h3>
+    <div class="profile-info">
+      <p><strong>Username:</strong> <span id="detailUsername"></span></p>
+      <p><strong>Full Name / Address:</strong> <span id="detailAddress"></span></p>
+      <p><strong>Contact:</strong> <span id="detailContact"></span></p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeProfileDetailsModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="chatbotModalBg" class="modal-bg" style="display:none">
+  <div class="modal modal-chatbot">
+    <div class="chatbot-header">
+      <h3>Smart Assistant🤖</h3>
+      <div class="chatbot-controls">
+        <button id="chatbotMuteBtn" class="btn secondary" title="Mute/Unmute">🔊</button>
+        <button onclick="closeChatbot()" class="btn secondary">✕</button>
+      </div>
+    </div>
+
+    <div id="chatbotMessages" class="chatbot-messages"></div>
+
+    <div class="chatbot-input">
+      <input id="chatbotInput" type="text" placeholder="Type or speak your question..." />
+      <button onclick="sendChatbotMessage()" class="btn primary">Send</button>
+      <button id="voiceBtn" class="btn secondary" title="Start Voice Input">🎤</button>
+    </div>
+  </div>
+</div>
+
+<button id="chatbotToggleBtn" class="chatbot-toggle-btn" onclick="openChatbot()">💬</button>
+  <script src="{{ url_for('static', filename='js/customer.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/chatbot_customer.js') }}"></script>
+<div id="announcementsModalBg" class="modal-bg" style="display:none">
+  <div class="modal modal-announcements">
+    <h3>All Announcements</h3>
+    <ul id="announcementsList" class="announcement-list"></ul>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeAnnouncements()">Close</button>
+    </div>
+  </div>
+</div>
+<script>
+  const darkModeBtn = document.getElementById('darkModeToggle');
+darkModeBtn.addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+});
+</script>
+</body>
+</html>

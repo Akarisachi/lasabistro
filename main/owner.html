@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Restaurant System – Owner Panel</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js/dist/Chart.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/owner.css') }}">
+</head>
+<body>
+<header> 
+  <h1>🍽️ Owner Dashboard</h1>
+  <div style="margin-left:auto; display:flex; align-items:center; gap:10px; position: relative;">
+  <button id="darkModeBtn" style="padding:6px 12px; border:none; border-radius:6px; cursor:pointer;">
+    🌙
+  </button>
+
+  <div id="profileIcon" style="width:36px; height:36px; border-radius:50%; overflow:hidden; cursor:pointer; border:2px solid #2f3640;">
+    <img src="https://i.pravatar.cc/150?img=3" alt="Profile" style="width:100%; height:100%; object-fit:cover;">
+  </div>
+
+  <div id="profileDropdown" class="profile-dropdown">
+    <div style="font-weight:bold; margin-bottom:8px;">Admin Name</div>
+    <button id="logoutBtn" class="logout-btn">Logout</button>
+  </div>
+</div>
+</header>
+
+<div id="sidebar" class="sidebar">
+  <button id="toggleSidebar" class="toggle-btn">☰</button>
+  <div class="menu-items">
+    <a onclick="showSection('dashboard')">📊 <span class="label">Dashboard</span></a>
+    <a onclick="showSection('menu')">🍽️ <span class="label">Menu</span></a>
+    <a onclick="showSection('announcements')">📢 <span class="label">Announcements</span></a>
+    <a onclick="showSection('reservations')">📅 <span class="label">Reservations</span></a>
+    <a onclick="showSection('inventory')">📦 <span class="label">Inventory</span></a>
+    <a onclick="showSection('orders')">🛒 <span class="label">Orders</span></a>
+    <a onclick="showSection('walkins')">🚶‍♂️ <span class="label">Walk-in Orders</span></a>
+    <a onclick="showSection('transactions')">💰 <span class="label">Transactions</span></a>
+    <a onclick="showSection('staffManagement')">👥 <span class="label">Staff Management</span></a>
+    <a onclick="showSection('staffAttendance')">⏱️ <span class="label">Staff Attendance</span></a>
+    <a onclick="showSection('reviews')">⭐ <span class="label">Reviews</span></a>
+  </div>
+</div>
+<main>
+
+  <section id="dashboard" class="active">
+  <h2>📊 Dashboard Overview</h2>
+  <div class="stats dashboard-grid">
+    <div class="card card-stat">
+  <div class="card-header">
+    <h3>Total Sales💰</h3>
+  </div>
+  <div class="card-content">
+    <p class="stat-value" id="totalSales">₱0</p>
+    <div class="stat-change">
+      <span>+12%</span> <span>from last month</span>
+    </div>
+  </div>
+</div>
+
+<div class="card card-stat">
+  <div class="card-header">
+    <h3>Online Users🧑‍💻</h3>
+  </div>
+  <p class="stat-value" id="onlineUsers">0</p>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width:0%;"></div>
+  </div>
+</div>
+
+   <div class="card card-stat">
+  <div class="card-header">
+    <h3>Customer Reviews⭐</h3>
+  </div>
+  <p id="reviewMajority">Loading...</p>
+</div>
+ <div class="card card-stat">
+  <div class="card-header">
+    <h3>Popular Dishes🍽️</h3>
+  </div>
+  <ul id="popularDishes">
+  </ul>
+</div>
+    <div class="card card-wide">
+  <h3>Peak Hours</h3>
+  <canvas id="peakChart"></canvas>
+</div>
+
+<div class="card card-wide">
+  <h3>Revenue Trend (12 Months)</h3>
+  <canvas id="revenueChart"></canvas>
+</div>
+
+
+    <div class="card card-wide">
+  <div class="card-header">
+    <h3>Order Type Distribution🛍️</h3>
+  </div>
+  <canvas id="orderTypeChart" width="350" height="200" style="margin-left: -30px;"></canvas>
+</div>
+
+  </div>
+</section>
+
+  <section id="menu">
+    <h2>🍽️ Menu Management</h2>
+    <button onclick="openMenuModal()">➕ Add Menu Item</button>
+    <table id="menuTable">
+      <thead>
+        <tr>
+          <th onclick="sortTable('name')">Name</th>
+          <th onclick="sortTable('category')">Category</th>
+          <th onclick="sortTable('price')">Price</th>
+          <th>Image</th>
+          <th>Ingredients</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+<section id="announcements">
+  <h2>📢 Announcements / Promotions</h2>
+
+  <button id="openAnnouncementModal" class="open-modal-btn">Add Announcement</button>
+
+  <div id="announcementModal" class="modal-bg">
+    <div class="modal-box">
+      <button class="close-btn" id="closeAnnouncementModal">&times;</button>
+      <h3>Add Announcement</h3>
+
+      <form id="announcementForm">
+        <div class="form-row">
+          <div>
+            <label for="announcementTitle">Title / Message</label>
+            <input type="text" id="announcementTitle" placeholder="e.g. 20% off Appetizers" required>
+          </div>
+          <div>
+            <label for="announcementType">Type</label>
+            <select id="announcementType">
+              <option value="General">General</option>
+              <option value="Sale">Sale</option>
+              <option value="Promotion">Promotion</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label for="announcementTarget">Apply Discount To</label>
+            <select id="announcementTarget">
+              <option value="">-- Select Item or Category --</option>
+              <optgroup label="Categories">
+                <option value="cat:Appetizer">Appetizer</option>
+                <option value="cat:Main Dish">Main Dish</option>
+                <option value="cat:Dessert">Dessert</option>
+                <option value="cat:Drinks">Drinks</option>
+                <option value="cat:Others">Others</option>
+              </optgroup>
+              <optgroup label="Menu Items" id="menuItemOptions"></optgroup>
+            </select>
+          </div>
+          <div>
+            <label for="announcementDiscount">Discount (%)</label>
+            <input type="number" id="announcementDiscount" min="0" max="100" placeholder="Optional">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label for="announcementStart">Start Date</label>
+            <input type="date" id="announcementStart" required>
+          </div>
+          <div>
+            <label for="announcementEnd">End Date</label>
+            <input type="date" id="announcementEnd" required>
+          </div>
+        </div>
+
+        <button type="submit" class="add-announcement">Add Announcement</button>
+      </form>
+    </div>
+  </div>
+
+<div id="categoryItemsModal" class="modal-bg">
+  <div class="modal-box">
+    <button class="close-btn" id="closeCategoryItemsModal">&times;</button>
+    <h3>Discounted Items</h3>
+    <table id="categoryItemsTable">
+      <thead>
+        <tr>
+          <th>Menu</th>
+          <th>Original Price</th>
+          <th>Discounted Price</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+  <table id="announcementTable">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Type</th>
+        <th>Category / Target</th>
+        <th>Original Price</th>
+        <th>Discounted Price</th>
+        <th>Start</th>
+        <th>End</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+  <section id="reservations">
+    <h2>📅 Reservations</h2>
+    <button onclick="openReservationModal()">➕ Add Reservation</button>
+    <table id="reservationTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Contact</th>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Table</th>
+          <th>Guests</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section id="inventory">
+    <h2>📦 Inventory</h2>
+    <button onclick="openInventoryModal()">➕ Add Ingredient</button>
+    <table id="inventoryTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Ingredient Type</th>
+          <th>Quantity</th>
+          <th>Unit</th>
+          <th>Threshold</th>
+          <th>Category</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+<section id="orders">
+  <h2>🛒 Orders</h2>
+
+  <h3 style="margin-top:20px; color:#0984e3;">🌐 Online Orders</h3>
+  <table id="onlineOrdersTable" class="orders-table">
+    <thead>
+      <tr>
+        <th>Order ID</th>
+        <th>Customer</th>
+        <th>Items</th>
+        <th>Total</th>
+        <th>Status</th>
+        <th>Date</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <h3 style="margin-top:30px; color:#e17055;">🚶‍♂️ Walk-in Orders</h3>
+  <table id="walkinOrdersMainTable" class="orders-table">
+    <thead>
+      <tr>
+        <th>Order ID</th>
+        <th>Table</th>
+        <th>Order Type</th>
+        <th>Items</th>
+        <th>Total</th>
+        <th>Status</th>
+        <th>Date</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+</section>
+<section id="walkins" class="card" style="display:none; margin-top:40px;">
+  <h2>🚶‍♂️ Add Walk-in Order</h2>
+
+  <div style="display:flex; gap:20px; align-items:flex-start;">
+    
+    <div style="flex:1; min-width:320px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <h3>Menu (click to add)</h3>
+        <select id="walkinCategoryFilter" style="padding:4px 8px; border-radius:4px;">
+          <option value="">All Categories</option>
+        </select>
+      </div>
+      <div id="walkinMenuContainer" 
+           style="display:flex; flex-wrap:wrap; gap:8px;">
+      </div>
+    </div>
+
+    <div style="width:360px;">
+      <h3>Current Walk-in Cart</h3>
+
+      <div id="walkinCartList" class="walkinCartList"
+           style="padding:12px; border-radius:8px;
+                  box-shadow:0 4px 12px rgba(0,0,0,0.06);">
+
+        <div id="walkinCartItems"></div>
+
+        <p style="text-align:right; font-weight:700; margin-top:10px;">
+          Total: ₱<span id="walkinCartTotal">0.00</span>
+        </p>
+
+        <label style="display:block; margin-top:10px;">Order Type</label>
+        <select id="walkinOrderType" style="width:100%; padding:8px; border-radius:6px;">
+          <option value="Dine-in">Dine-in</option>
+          <option value="Takeout">Takeout</option>
+        </select>
+
+        <div id="walkinTableWrapper" style="margin-top:10px;">
+          <label>Table number (optional)</label>
+          <input id="walkinTableNumber" placeholder="e.g. T3"
+                 style="width:94%; padding:8px; border-radius:6px;">
+        </div>
+
+        <div style="display:flex; gap:8px; margin-top:10px;">
+          <button onclick="submitWalkinOrder()">Place Walk-in Order</button>
+          <button style="background:#e84118;" onclick="clearWalkinCart()">Clear</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="transactions">
+  <h2>💰 Transactions</h2>
+  
+  <div style="margin-bottom: 15px;">
+    <label for="monthFilter">Filter by Month:</label>
+    <input type="month" id="monthFilter" onchange="loadTransactions()">
+  </div>
+  
+  <table id="transactionsTable">
+    <thead>
+      <tr>
+        <th>Order ID</th>
+        <th>Customer</th>
+        <th>Items</th>
+        <th>Total</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+<div class="modal-bg" id="orderModalBg">
+  <div class="modal-box">
+    <h3>Order Details</h3>
+    <div id="orderDetails" style="margin-top:15px; max-height:300px; overflow-y:auto;"></div>
+    <div style="margin-top:10px; text-align:right; font-weight:bold; font-size:16px;">
+      Total: ₱<span id="orderTotal">0.00</span>
+    </div>
+    <div style="text-align:center; margin-top:15px;">
+      <button onclick="closeOrderModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<section id="staffManagement">
+    <h2>👥 Staff Management</h2>
+    <button onclick="openStaffModal()">➕ Add Staff</button>
+
+    <table id="staffTable">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Contact</th>
+                <th>Status</th>
+                <th>QR Code</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</section>
+<section id="staffAttendance">
+  <h2>⏱️ Staff Attendance</h2>
+
+  <div class="attendance-controls" style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
+    <button id="openScanBtn" onclick="openScanModal()">📷 Scan QR</button>
+
+    <input type="text" id="attSearchName" placeholder="Search name..." style="padding:6px; min-width:160px;">
+    <select id="attFilterPosition" style="padding:6px;">
+      <option value="">All positions</option>
+    </select>
+
+    <input type="date" id="attFilterDate" title="Filter by specific date">
+    <input type="month" id="attFilterMonth" title="Filter by month">
+
+    <button id="clearFiltersBtn" style="padding:6px;">Clear filters</button>
+  </div>
+
+  <div id="scanModal" class="modal-bg" style="display:none;">
+    <div class="modal-box" style="max-width:720px;">
+      <h3>Scan Staff QR</h3>
+      <div style="display:flex; gap:12px;">
+        <div>
+          <video id="qr-video" autoplay muted playsinline style="width:320px; height:240px; background:#000;"></video>
+          <canvas id="qr-canvas" style="display:none;"></canvas>
+        </div>
+
+        <div style="flex:1;">
+          <p id="scanStatus">Camera is off.</p>
+          <p id="scanResult" style="font-weight:600;"></p>
+          <div id="scanNotif" style="margin-top:8px;"></div>
+
+          <div style="margin-top:12px;">
+            <button onclick="stopScan()">Stop</button>
+            <button onclick="closeScanModal()" style="background:#e84118;">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <table id="attendanceTable" style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr style="background:#f0f0f0;">
+        <th style="padding:8px; text-align:center;">Name</th>
+        <th style="padding:8px; text-align:center;">Position</th>
+        <th style="padding:8px; text-align:center;">Time In</th>
+        <th style="padding:8px; text-align:center;">Time Out</th>
+        <th style="padding:8px; text-align:center;">Status</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+<section id="reviews">
+    <h2>🌟 Customer Reviews</h2>
+    <table id="reviewTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Rating</th>
+          <th>Review</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+</main>
+
+<div id="menuModal" class="modal-bg">
+  <div class="modal-box">
+    <h3>Add Menu Item</h3>
+    <form id="menuForm" enctype="multipart/form-data">
+      <label>Dish Name</label>
+      <input type="text" id="name" name="name" required>
+
+      <label>Category</label>
+      <select id="category" name="category" required>
+        <option value="">-- Select --</option>
+        <option>Appetizer</option>
+        <option>Main Dish</option>
+        <option>Dessert</option>
+        <option>Drinks</option>
+        <option>Others</option>
+      </select>
+
+      <label>Price</label>
+      <input type="number" id="price" name="price" required>
+
+      <label>Image</label>
+      <input type="file" id="image" name="image" accept="image/*" required>
+
+      <label>Ingredients</label>
+      <div id="ingredientList"></div>
+
+      <button type="submit">Save</button>
+      <button type="button" style="background:#e84118;" onclick="closeMenuModal()">Cancel</button>
+    </form>
+  </div>
+</div>
+
+<div id="editMenuModal" class="modal-bg">
+  <div class="modal-box">
+    <h3>Edit Menu Item</h3>
+    <form id="editForm" enctype="multipart/form-data">
+      <input type="hidden" id="edit_id">
+      <label>Dish Name</label>
+      <input type="text" id="edit_name" name="name" required>
+
+      <label>Category</label>
+      <select id="edit_category" name="category" required>
+        <option>Appetizer</option>
+        <option>Main Dish</option>
+        <option>Dessert</option>
+        <option>Drinks</option>
+        <option>Others</option>
+      </select>
+
+      <label>Price</label>
+      <input type="number" id="edit_price" name="price" required>
+
+      <label>Image (Upload to replace)</label>
+      <input type="file" id="edit_image" name="image" accept="image/*">
+
+      <label>Ingredients</label>
+      <div id="editIngredientList"></div>
+
+      <button type="submit">Save Changes</button>
+      <button type="button" style="background:#e84118;" onclick="closeEditMenuModal()">Cancel</button>
+    </form>
+  </div>
+</div>
+
+<div id="inventoryModal" class="modal-bg">
+  <div class="modal-box">
+    <h3 id="inventoryModalTitle">Add Ingredient</h3>
+    <form id="inventoryForm">
+      <input type="hidden" id="ing_id">
+
+      <label>Name</label>
+      <input type="text" id="ing_name" name="name" required>
+
+      <label>Quantity</label>
+      <input type="number" id="ing_quantity" name="quantity" required>
+
+      <label>Ingredient Type</label>
+        <select id="ing_type" name="ingredient_type" required>
+            <option value="">-- Select Type --</option>
+            <option value="Vegetable">Vegetable</option>
+            <option value="Meat">Meat</option>
+            <option value="Dairy">Dairy</option>
+            <option value="Spice">Spice</option>
+            <option value="Other">Other</option>
+        </select>
+
+        <label>Unit</label>
+        <input type="text" id="ing_unit" name="unit" required>
+
+        <label>Threshold</label>
+        <input type="number" id="ing_threshold" name="threshold">
+
+        <label>Dish Categories (select the menu types this ingredient is used for)</label>
+        <div>
+            <input type="checkbox" name="category" value="Appetizer"> Appetizer
+            <input type="checkbox" name="category" value="Main Dish"> Main Dish
+            <input type="checkbox" name="category" value="Dessert"> Dessert
+            <input type="checkbox" name="category" value="Drinks"> Drinks
+            <input type="checkbox" name="category" value="Others"> Others
+        </div>
+      <button type="submit">Save</button>
+      <button type="button" style="background:#e84118;" onclick="closeInventoryModal()">Cancel</button>
+    </form>
+  </div>
+</div>
+
+<div id="reservationModal" class="modal-bg">
+  <div class="modal-box">
+    <h3>Add Reservation</h3>
+    <form id="reservationForm">
+      <label>Name</label>
+      <input type="text" id="customer_name" name="customer_name" required>
+      <label>Contact Number</label>
+      <input type="text" id="contact_number" name="contact_number" required>
+      <label>Date</label>
+      <input type="date" id="reservation_date" name="reservation_date" required>
+      <label>Time</label>
+      <input type="time" id="reservation_time" name="reservation_time" required>
+      <label>Table Number (optional)</label>
+      <input type="number" id="table_number" name="table_number">
+      <label>Number of Guests</label>
+      <input type="number" id="num_guests" name="num_guests" required>
+      <button type="submit">Save</button>
+      <button type="button" style="background:#e84118;" onclick="closeReservationModal()">Cancel</button>
+    </form>
+  </div>
+</div>
+
+<div id="staffModal" class="modal-bg">
+  <div class="modal-box">
+    <h3 id="staffModalTitle">Add Staff</h3>
+    <form id="staffForm">
+      <input type="hidden" id="staff_id">
+
+      <label>Name</label>
+      <input type="text" id="staff_name" name="staff_name" required>
+
+      <label>Position</label>
+      <input type="text" id="staff_position" name="staff_position" required>
+
+      <label>Contact</label>
+      <input type="num" id="staff_contact" required>
+
+      <label>Status</label>
+      <select id="staff_status" name="status">
+        <option>Active</option>
+        <option>On Leave</option>
+        <option>Inactive</option>
+      </select>
+      <button type="submit">Save</button>
+      <button type="button" style="background:#e84118;" onclick="closeStaffModal()">Cancel</button>
+    </form>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/owner.js') }}"></script>
+<script src="{{ url_for('static', filename='js/chatbot_owner.js') }}"></script>
+<button id="openAiBtn" title="Owner AI Assistant">
+  🤖 <span id="aiAlertDot" style="display:none; width:10px; height:10px; background:red; border-radius:50%; margin-left:6px; vertical-align:middle;"></span>
+</button>
+<div id="aiModal" class="ai" style="display:none; position:fixed; right:20px; bottom:80px; z-index:1200; width:360px; max-width:95%;
+     border-radius:10px; box-shadow:0 8px 30px rgba(0, 0, 0, 0.2); overflow:hidden;">
+  <div style="padding:12px; display:flex; justify-content:space-between; align-items:center; background:#2fb97f; color:#fff;">
+    <strong>Smart Assistant🤖</strong>
+    <button id="closeAiBtn" style="background:none;border:none;color:#fff;font-size:16px;cursor:pointer;">✕</button>
+  </div>
+  <div id="aiChatArea" style="padding:12px; height:320px; overflow:auto;">
+  </div>
+<div style="padding:10px; border-top:1px solid #eee; display:flex; gap:8px;">
+    <input id="aiInput" placeholder="Ask the assistant (sales, inventory tips...)" style="flex:1;padding:8px;border-radius:6px;border:1px solid #ddd;">
+    <button id="aiMicBtn" style="background:#2fb97f;color:white;padding:8px 12px;border-radius:6px;border:none;">🎤</button>
+    <button id="aiVolumeBtn" style="background:#2fb97f;color:white;padding:8px 12px;border-radius:6px;border:none;">🔊</button>
+    <button id="aiSendBtn" style="background:#2fb97f;color:white;padding:8px 12px;border-radius:6px;border:none;">Send</button>
+</div>
+</div>
+<script>
+ const profileIcon = document.getElementById('profileIcon');
+const profileDropdown = document.getElementById('profileDropdown');
+
+profileIcon.addEventListener('click', (e) => {
+  e.stopPropagation(); 
+  profileDropdown.style.display = profileDropdown.style.display === 'block' ? 'none' : 'block';
+});
+
+document.body.addEventListener('click', () => {
+  profileDropdown.style.display = 'none';
+});
+
+logoutBtn.addEventListener('click', () => {
+  window.location.href = '/logout';
+});
+</script>
+</body>
+</html>

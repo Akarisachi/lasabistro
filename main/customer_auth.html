@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Lasa Bistro — Customer Login / Signup</title>
+<style>
+:root {
+  --red: #8B0000;
+  --accent: #F9D27D;
+  --muted: #666;
+  --bg: #fff7e9;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, Arial;
+  background: var(--bg);
+  color: #222;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.card {
+  width: 100%;
+  max-width: 980px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  overflow: hidden;
+  gap: 20px;
+  transition: all 0.7s ease;
+}
+
+.hero {
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  background: var(--red);
+  transition: transform 0.7s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.7s;
+}
+
+.forms {
+  padding: 28px;
+  background: #fff;
+  opacity: 1;
+  transform: translateX(0);
+  transition: all 0.6s ease;
+}
+
+.hero::before,
+.hero::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.4;
+  z-index: 0;
+}
+
+.hero::before {
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(135deg, #F9D27D, #FFB347);
+  top: -50px;
+  left: -50px;
+  animation: floatShape 6s ease-in-out infinite alternate;
+}
+
+.hero::after {
+  width: 500px;
+  height: 500px;
+  background: linear-gradient(135deg, #8B0000, #FF4500);
+  bottom: -150px;
+  right: -100px;
+  animation: floatShape 8s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes floatShape {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(20px, 20px) rotate(20deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+.hero h1,
+.hero p {
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.8s forwards 0.3s;
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero h1 {
+  margin: 0 0 10px;
+  font-size: 28px;
+  color: #fff;
+}
+
+.hero p {
+  margin: 0 0 18px;
+  line-height: 1.5;
+  color: #f0f0f0;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.tab {
+  flex: 1;
+  padding: 10px;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 8px;
+  background: #f4f4f4;
+  transition: all 0.3s ease;
+}
+.tab.active {
+  background: var(--red);
+  color: white;
+  font-weight: 600;
+}
+
+form {
+  display: block;
+}
+label {
+  display: block;
+  font-size: 13px;
+  margin-top: 10px;
+  color: #333;
+}
+input[type="text"],
+input[type="password"],
+input[type="tel"],
+textarea {
+  width: 100%;
+  padding: 10px 12px;
+  margin-top: 6px;
+  border-radius: 8px;
+  border: 1px solid #e6e6e6;
+  box-sizing: border-box;
+}
+.small {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 8px;
+}
+.row {
+  display: flex;
+  gap: 8px;
+}
+.btn {
+  display: inline-block;
+  padding: 12px 18px;
+  border-radius: 10px;
+  background: var(--red);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  margin-top: 14px;
+  transition: transform 0.2s, background 0.3s;
+}
+.btn:hover {
+  transform: scale(1.05);
+}
+.btn.secondary {
+  background: #ccc;
+  color: #111;
+}
+
+.terms-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--red);
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  font-size: 13px;
+}
+
+.panel {
+  display: block;
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.card.login #forms {
+  transform: translateX(-20px);
+  opacity: 1;
+}
+.card.signup #forms {
+  transform: translateX(0);
+  opacity: 1;
+}
+.card.login #hero,
+.card.signup #hero {
+  transform: translateX(0);
+  opacity: 1; 
+}
+
+.modal-bg { 
+  position:fixed; inset:0; 
+  display:none; 
+  align-items:center; 
+  justify-content:center; 
+  background:rgba(0,0,0,0.45); 
+  z-index:2000; 
+}
+.modal { 
+  width:90%; 
+  max-width:760px; 
+  background:#fff; 
+  border-radius:10px; 
+  padding:18px; 
+  box-shadow:0 10px 30px rgba(0,0,0,0.3); 
+  max-height:80vh; 
+  overflow:auto; 
+}
+.modal h3{ 
+  margin-top:0; 
+  color:var(--red); 
+}
+.modal .close { 
+  float:right; 
+  background:none; 
+  border:none; 
+  font-size:18px; 
+  cursor:pointer; 
+}
+
+.panel { 
+  display:block; 
+}
+#hero { 
+  transform: translateX(0); 
+  opacity:0.8; 
+}
+#forms { 
+  transform: translateX(0); 
+  opacity:1; 
+}
+
+.card.login #hero { 
+  transform: translateX(450px); 
+  opacity:0.8; 
+}
+.card.login #forms { 
+  transform: translateX(-550px); 
+  opacity:1; 
+}
+
+.card.signup #hero { 
+  transform: translateX(0); 
+  opacity:0.8; 
+}
+.card.signup #forms { 
+  transform: translateX(0); 
+  opacity:1; 
+}
+
+@media (max-width:900px){
+  .card {
+    grid-template-columns: 1fr;
+  }
+  .hero {
+    order: 2;
+  }
+  .forms {
+    order: 1;
+  }
+}
+
+</style>
+
+</head>
+<body>
+
+<div class="card signup" role="main">
+  <div class="hero" id="hero">
+    <h1>Welcome to Lasa Filipino Bistro</h1>
+    <p>Sign up to order or login to view your orders & bookings. We respect your privacy — read our Terms & Privacy before registering.</p>
+  </div>
+
+  <div class="forms" id="forms">
+    <div class="tabs">
+      <div id="tab-login" class="tab" onclick="showTab('login')">Login</div>
+      <div id="tab-signup" class="tab active" onclick="showTab('signup')">Sign up</div>
+    </div>
+
+    <div id="login" class="panel" style="display:block;">
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <label>Username</label>
+        <input id="login_username" type="text" autocomplete="username" required>
+        <label>Password</label>
+        <input id="login_password" type="password" autocomplete="current-password" required>
+        <button class="btn" type="submit">Login</button>
+        <div id="loginMessage" class="small" aria-live="assertive"></div>
+      </form>
+    </div>
+
+    <div id="signup" class="panel">
+      <form id="signupForm" onsubmit="handleSignup(event)">
+        <label>Username</label>
+        <input id="su_username" type="text" required>
+        <label>Password</label>
+        <input id="su_password" type="password" required>
+        <label>Address</label>
+        <textarea id="su_address" rows="2"></textarea>
+        <label>Contact</label>
+        <input id="su_contact" type="tel">
+        <div class="terms-line">
+          <input id="su_terms" type="checkbox">
+          <div style="flex:1;">
+            I accept the <button type="button" class="link-btn" onclick="openTerms()">Terms & Privacy</button>.
+          </div>
+        </div>
+        <div id="signupMessage" class="small" aria-live="assertive"></div>
+        <button class="btn" type="submit">Create account</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div id="termsModal" class="modal-bg" role="dialog" aria-modal="true">
+  <div class="modal">
+    <button class="close" onclick="closeTerms()">✕</button>
+    <h3>Terms & Privacy</h3>
+    <p><strong>Last updated:</strong> 2025-12-01</p>
+    <h4>Terms of Use</h4>
+    <p>By creating an account you agree to use Lasa Filipino Bistro platform lawfully. You agree not to misuse the service.</p>
+    <h4>Privacy</h4>
+    <p>We collect your username, contact, and address to provide ordering and reservation services. Passwords are stored securely (hashed). We will not sell your personal data. For full policy, list details here.</p>
+    <div style="text-align:right; margin-top:12px;">
+      <button class="btn secondary" onclick="closeTerms()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_URL = 'http://localhost:5001'; 
+
+function showTab(tab){
+  const card = document.querySelector('.card');
+  if(tab==='login'){
+    card.classList.add('login');
+    card.classList.remove('signup');
+  } else {
+    card.classList.add('signup');
+    card.classList.remove('login');
+  }
+
+  document.getElementById('login').style.display = tab==='login' ? 'block':'none';
+  document.getElementById('signup').style.display = tab==='signup' ? 'block':'none';
+  document.getElementById('tab-login').classList.toggle('active', tab==='login');
+  document.getElementById('tab-signup').classList.toggle('active', tab==='signup');
+
+  document.getElementById('loginMessage').textContent='';
+  document.getElementById('signupMessage').textContent='';
+}
+
+function openTerms(){ document.getElementById('termsModal').style.display='flex'; }
+function closeTerms(){ document.getElementById('termsModal').style.display='none'; }
+
+async function handleSignup(e){
+  e.preventDefault();
+  const username = document.getElementById('su_username').value.trim();
+  const password = document.getElementById('su_password').value;
+  const address = document.getElementById('su_address').value.trim();
+  const contact = document.getElementById('su_contact').value.trim();
+  const accepted_terms = document.getElementById('su_terms').checked;
+  const msgEl = document.getElementById('signupMessage');
+  msgEl.textContent='';
+
+  if(!accepted_terms){ msgEl.textContent='You must accept Terms & Privacy to register.'; return; }
+
+  try {
+    const res = await fetch(API_URL+'/signup',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username,password,address,contact,accepted_terms})
+    });
+    const data = await res.json();
+    if(res.ok && data.status==='success'){
+      msgEl.style.color='green';
+      msgEl.textContent=data.message||'Registration successful';
+      document.getElementById('signupForm').reset();
+      setTimeout(()=>showTab('login'),800);
+    } else {
+      msgEl.style.color='#900';
+      msgEl.textContent=data.message||'Registration failed';
+    }
+  } catch(err){
+    console.error('Signup error', err);
+    msgEl.style.color='#900';
+    msgEl.textContent='Network error: '+(err.message||'');
+  }
+}
+
+async function handleLogin(e){
+  e.preventDefault();
+  const username = document.getElementById('login_username').value.trim();
+  const password = document.getElementById('login_password').value;
+  const msgEl = document.getElementById('loginMessage'); 
+  msgEl.textContent = '';
+
+  try {
+    const res = await fetch(API_URL+'/login', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username, password})
+    });
+
+    const data = await res.json();
+
+    if(res.ok && data.status==='success'){
+    msgEl.style.color='green';
+    msgEl.textContent=data.message || 'Registration successful';
+    document.getElementById('signupForm').reset();
+
+    const loginRes = await fetch(API_URL+'/login', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({username, password})
+    });
+    const loginData = await loginRes.json();
+    if(loginRes.ok && loginData.status==='success'){
+        localStorage.setItem('username', loginData.user.username);
+        setTimeout(()=>window.location.href='/customer', 800);
+    } else {
+        msgEl.textContent='Signup succeeded but auto-login failed.';
+    }
+}
+ else {
+      msgEl.style.color = '#900';
+      msgEl.textContent = data.message || 'Login failed';
+    }
+  } catch(err){
+    console.error('Login error', err);
+    msgEl.style.color = '#900';
+    msgEl.textContent = 'Network error: ' + (err.message || '');
+  }
+}
+
+window.addEventListener('DOMContentLoaded',()=>showTab('signup'));
+</script>
+</body>
+</html>

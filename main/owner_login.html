@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Lasa Bistro — Customer Login</title>
+<style>
+:root {
+  --red: #8B0000;
+  --accent: #F9D27D;
+  --muted: #666;
+  --bg: #fff7e9;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, Arial;
+  background: var(--bg);
+  color: #222;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.card {
+  width: 100%;
+  max-width: 500px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  display: grid;
+  grid-template-columns: 1fr;
+  overflow: hidden;
+  gap: 20px;
+  transition: all 0.7s ease;
+}
+
+.hero {
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  background: var(--red);
+  transition: transform 0.7s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.7s;
+}
+
+.forms {
+  padding: 28px;
+  background: #fff;
+}
+
+.hero h1,
+.hero p {
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.8s forwards 0.3s;
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero h1 { margin: 0 0 10px; font-size: 28px; color: #fff; }
+.hero p { margin: 0 0 18px; line-height: 1.5; color: #f0f0f0; }
+
+form { display: block; }
+label { display: block; font-size: 13px; margin-top: 10px; color: #333; }
+input[type="text"],
+input[type="password"] {
+  width: 100%;
+  padding: 10px 12px;
+  margin-top: 6px;
+  border-radius: 8px;
+  border: 1px solid #e6e6e6;
+  box-sizing: border-box;
+}
+.btn {
+  display: inline-block;
+  padding: 12px 18px;
+  border-radius: 10px;
+  background: var(--red);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  margin-top: 14px;
+  transition: transform 0.2s, background 0.3s;
+}
+.btn:hover { transform: scale(1.05); }
+
+.small { font-size: 13px; color: var(--muted); margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<div class="card" role="main">
+  <div class="hero">
+    <h1>Welcome to Lasa Filipino Bistro</h1>
+    <p>Please login to view your dashboard.</p>
+  </div>
+
+  <div class="forms">
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <label>Username</label>
+      <input id="login_username" type="text" autocomplete="username" required>
+      <label>Password</label>
+      <input id="login_password" type="password" autocomplete="current-password" required>
+      <button class="btn" type="submit">Login</button>
+      <div id="loginMessage" class="small" aria-live="assertive"></div>
+    </form>
+  </div>
+</div>
+
+<script>
+const HARDCODED_USER = "admin";
+const HARDCODED_PASS = "admin123";
+
+function handleLogin(e){
+  e.preventDefault();
+  const username = document.getElementById('login_username').value.trim();
+  const password = document.getElementById('login_password').value;
+  const msgEl = document.getElementById('loginMessage'); 
+  msgEl.textContent = '';
+
+  if(username === HARDCODED_USER && password === HARDCODED_PASS){
+    msgEl.style.color='green';
+    msgEl.textContent = 'Login successful!';
+    localStorage.setItem('username', username);
+    setTimeout(()=>window.location.href='/owner', 800); 
+  } else {
+    msgEl.style.color = '#900';
+    msgEl.textContent = 'Invalid username or password';
+  }
+}
+</script>
+
+</body>
+</html>
