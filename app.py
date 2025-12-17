@@ -20,7 +20,6 @@ app.secret_key = "supersecretkey123"  # replace with a random string in producti
 from ai_routes import ai_bp
 app.register_blueprint(ai_bp)
 # 📁 Folder to save uploaded images
-QR_FOLDER = "static/qrcodes" 
 UPLOAD_FOLDER = os.path.join(app.static_folder, "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -833,55 +832,34 @@ def add_staff():
         "INSERT INTO staff (name, position, contact, status) VALUES (%s, %s, %s, %s)",
         (data["name"], data["position"], data["contact"], data["status"])
     )
-    db.commit()
-    new_id = cursor.lastrowid
+    staff_id = cursor.lastrowid
 
-    # Generate QR Code
-    qr_value = f"STAFF-{new_id}"
-    qr_filename = f"staff_{new_id}.png"
-
-    # Use a fixed static path
-    QR_FOLDER = os.path.join(os.path.dirname(__file__), "main", "static", "qrcodes")
-    os.makedirs(QR_FOLDER, exist_ok=True)
+    # Generate QR code
+    qr_value = f"STAFF-{staff_id}"
+    qr_filename = f"staff_{staff_id}.png"
     qr_path = os.path.join(QR_FOLDER, qr_filename)
+    os.makedirs(QR_FOLDER, exist_ok=True)
 
     try:
         import qrcode
         img = qrcode.make(qr_value)
         img.save(qr_path)
-    except Exception as e:
-        print("QR code generation failed:", e)
-        qr_filename = None
-
-    # Update DB if QR was created
-    if qr_filename:
-        cursor.execute(
-            "UPDATE staff SET qr_code = %s WHERE id = %s",
-            (qr_filename, new_id)
-        )
+        cursor.execute("UPDATE staff SET qr_code=%s WHERE id=%s", (qr_filename, staff_id))
         db.commit()
+    except Exception as e:
+        print("QR generation failed:", e)
+        qr_filename = None
 
     cursor.close()
     db.close()
 
-    qr_url = f"/static/qrcodes/{qr_filename}" if qr_filename else None
-
     return jsonify({
         "message": "Staff added successfully",
+        "id": staff_id,
         "qr_code": qr_filename,
-        "qr_url": qr_url,
-        "id": new_id
+        "qr_url": f"/static/qrcodes/{qr_filename}" if qr_filename else None
     }), 201
 
-    # Return full URL so frontend can display QR
-    qr_url = f"/static/qrcodes/{qr_filename}" if qr_filename else None
-
-    return jsonify({
-        "message": "Staff added successfully",
-        "qr_code": qr_filename,
-        "qr_url": qr_url,
-        "id": new_id
-    }), 201
 
 
 # --- GET SINGLE STAFF ---
@@ -1239,6 +1217,7 @@ def customer_menu():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
 
