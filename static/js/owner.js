@@ -1,4 +1,4 @@
-const API_URL = "https://lasabistro-6.onrender.com";
+const API_URL = "http://127.0.0.1:5000";
 
 /* -------------------- SIDEBAR -------------------- */
 const sidebar = document.getElementById("sidebar");
@@ -694,7 +694,7 @@ function scanFrameLoop() {
 
 async function sendScanPayloadToServer(payload) {
     try {
-        const res = await fetch("/attendance/scan", {
+        const res = await fetch(`${API_URL}/attendance/scan`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ payload })
@@ -834,7 +834,7 @@ function debounce(fn, wait) {
 
 async function sendScanPayloadToServer(payload) {
     try {
-        const res = await fetch("/attendance/scan", {
+        const res = await fetch(`${API_URL}/attendance/scan`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ payload })
@@ -1351,7 +1351,7 @@ window.addEventListener("click", (e) => { if (e.target === modal) modal.style.di
 
 
 function populateMenuItems() {
-    fetch("/customer/menu")
+    fetch(`${API_URL}/customer/menu`)
         .then(res => res.json())
         .then(data => {
             const menuItemOptions = document.getElementById("menuItemOptions");
@@ -1382,7 +1382,7 @@ function addAnnouncement() {
         end: document.getElementById("announcementEnd").value,
         type: document.getElementById("announcementType").value
     };
-    fetch("/announcements", {
+    fetch(`${API_URL}/announcements`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)
@@ -1397,7 +1397,7 @@ function addAnnouncement() {
 }
 
 function loadAnnouncements() {
-    fetch("/announcements")
+    fetch(`${API_URL}/announcements`)
         .then(res => res.json())
         .then(data => {
             const tbody = document.querySelector("#announcementTable tbody");
@@ -1457,7 +1457,7 @@ closeCategoryModalBtn.addEventListener("click", () => categoryModal.style.displa
 window.addEventListener("click", (e) => { if (e.target === categoryModal) categoryModal.style.display = "none"; });
 
 function viewCategoryItems(category, discount) {
-    fetch("/customer/menu")
+    fetch(`${API_URL}/customer/menu`)
         .then(res => res.json())
         .then(menu => {
             const filtered = menu.filter(i => i.category === category);
@@ -1506,4 +1506,3 @@ function updateOnlineUsersProgress(count, max = 50) {
 
 // Example usage:
 updateOnlineUsersProgress(18);
-
