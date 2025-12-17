@@ -535,14 +535,28 @@ async function addStaff(event) {
 
         if (!res.ok) throw new Error("Network error");
 
-        alert("Staff added successfully!");
+        const result = await res.json();
+
+        // Show QR Code if generated
+        if (result.qr_url) {
+            const qrContainer = document.getElementById("staffQrContainer");
+            qrContainer.innerHTML = `
+                <p>Staff added successfully! QR Code:</p>
+                <img src="${result.qr_url}" alt="Staff QR Code" style="width:150px;height:150px;" />
+            `;
+        } else {
+            alert("Staff added, but QR generation failed.");
+        }
+
         closeStaffModal();
         loadStaff();
+
     } catch (err) {
         console.error(err);
         alert("Failed to add staff");
     }
 }
+
 
 function openStaffModal() {
     const form = document.getElementById("staffForm");
@@ -1506,3 +1520,4 @@ function updateOnlineUsersProgress(count, max = 50) {
 
 // Example usage:
 updateOnlineUsersProgress(18);
+
