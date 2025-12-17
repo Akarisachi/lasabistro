@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, session
 from datetime import datetime
 import time, random
+import mysql.connector
 import qrcode
 import os
 
@@ -13,23 +14,26 @@ ai_bp = Blueprint("ai", __name__, url_prefix="/ai")
 # DB CONNECTION
 # -----------------------------
 def get_db_connection():
-    return psycopg.connect(
-        "postgresql://restaurant_db_pj8q_user:hsImkcb315dSQsTsV7Ga1VUdebMzOw9d@dpg-d50morfgi27c73ap9510-a.oregon-postgres.render.com/restaurant_db_pj8q",
-        row_factory=dict_row
+    return mysql.connector.connect(
+        host="switchyard.proxy.rlwy.net",
+        port=39390,
+        user="root",             # replace if your Railway user is different
+        password="sXeDPzMNsNACCqmHxGXjHWyPgrpgELDX", # replace with your Railway DB password
+        database="railway"
     )
 
 # -----------------------------
 # DATA FETCHERS
 # -----------------------------
 def fetch_inventory(db):
-    cur = db.cursor()
+    cur = db.cursor(dictionary=True)
     cur.execute("SELECT name, quantity, threshold, unit, category FROM inventory")
     data = cur.fetchall()
     cur.close()
     return data
 
 def fetch_inventory_alerts(db):
-    cur = db.cursor()
+    cur = db.cursor(dictionary=True)
     cur.execute("""
         SELECT name, quantity, threshold, unit
         FROM inventory
@@ -40,14 +44,14 @@ def fetch_inventory_alerts(db):
     return alerts
 
 def fetch_menu(db):
-    cur = db.cursor()
+    cur = db.cursor(dictionary=True)
     cur.execute("SELECT id, name, price FROM menu")
     data = cur.fetchall()
     cur.close()
     return data
 
 def fetch_active_sales(db):
-    cur = db.cursor()
+    cur = db.cursor(dictionary=True)
     cur.execute("""
         SELECT title, discount
         FROM announcements
@@ -59,7 +63,7 @@ def fetch_active_sales(db):
     return data
 
 def fetch_sales_stats(db, days=30):
-    cur = db.cursor()
+    cur = db.cursor(dictionary=True)
     cur.execute("""
         SELECT oi.name, SUM(oi.qty) AS total_qty
         FROM orders o
@@ -74,7 +78,7 @@ def fetch_sales_stats(db, days=30):
     return data
 
 def fetch_total_sales(db, days=30):
-    cur = db.cursor()
+    cur = db.cursor(dictionary=True)
     cur.execute("""
         SELECT SUM(total) AS total_sales
         FROM orders
@@ -86,7 +90,7 @@ def fetch_total_sales(db, days=30):
     return total
 
 def fetch_peak_hours(db):
-    cur = db.cursor()
+    cur = db.cursor(dictionary=True)
     cur.execute("""
         SELECT HOUR(created_at) AS hour, COUNT(*) AS orders_count
         FROM orders
@@ -100,7 +104,7 @@ def fetch_peak_hours(db):
     return data
 
 def predict_stock_depletion(db):
-    cur = db.cursor()
+    cur = db.cursor(dictionary=True)
     cur.execute("""
         SELECT i.name, i.quantity, i.threshold, i.unit,
         IFNULL(SUM(oi.qty)/30,0) AS daily_avg
@@ -115,7 +119,7 @@ def predict_stock_depletion(db):
     return data
 
 def fetch_current_staff(db):
-    cur = db.cursor()
+    cur = db.cursor(dictionary=True)
     cur.execute("SELECT COUNT(*) AS total_staff FROM staff WHERE status='Active'")
     staff_count = cur.fetchone()["total_staff"]
     cur.close()
@@ -736,4 +740,3 @@ def generate_staff_qr(staff_id, staff_name):
     img.save(qr_path)
     
     return filename  # return only filename
-
