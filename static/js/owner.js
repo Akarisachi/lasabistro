@@ -1487,7 +1487,7 @@ setInterval(loadAnnouncements, 1000);
 async function deleteAnnouncement(id) {
     if (!confirm('Are you sure you want to delete this announcement?')) return;
     try {
-        const res = await fetch(`/announcements/${id}`, { method: 'DELETE' });
+        const res = await fetch(`${API_URL}/announcements/${id}`, { method: 'DELETE' });
         const data = await res.json();
         if (data.status === 'success') loadAnnouncements();
         else alert('Failed to delete: ' + data.message);
@@ -1506,4 +1506,3 @@ function updateOnlineUsersProgress(count, max = 50) {
 
 // Example usage:
 updateOnlineUsersProgress(18);
-
