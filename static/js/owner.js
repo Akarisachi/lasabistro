@@ -1,4 +1,4 @@
-const API_URL = "http://127.0.0.1:5000";
+const API_URL = "https://lasabistro-6.onrender.com";
 
 /* -------------------- SIDEBAR -------------------- */
 const sidebar = document.getElementById("sidebar");
@@ -1506,3 +1506,4 @@ function updateOnlineUsersProgress(count, max = 50) {
 
 // Example usage:
 updateOnlineUsersProgress(18);
+
