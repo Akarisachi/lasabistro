@@ -834,28 +834,32 @@ def add_staff():
         (data["name"], data["position"], data["contact"], data["status"])
     )
     db.commit()
-
-    new_id = cursor.lastrowid  # ← get staff ID
+    new_id = cursor.lastrowid  # get staff ID
 
     # -------- Generate QR Code --------
     qr_value = f"STAFF-{new_id}"
     qr_filename = f"staff_{new_id}.png"
-
-    # Build the path inside /static/qrcodes
     QR_FOLDER = os.path.join(current_app.static_folder, "qrcodes")
-    os.makedirs(QR_FOLDER, exist_ok=True)  # make sure folder exists
-
+    os.makedirs(QR_FOLDER, exist_ok=True)  # ensure folder exists
     qr_path = os.path.join(QR_FOLDER, qr_filename)
 
     try:
         import qrcode
-        img = qrcode.make(qr_value)
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(qr_value)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
         img.save(qr_path)
     except Exception as e:
         print("QR code generation failed:", e)
         qr_filename = None
 
-    # Update DB if QR was created
+    # Update DB with QR filename if created
     if qr_filename:
         cursor.execute(
             "UPDATE staff SET qr_code = %s WHERE id = %s",
@@ -866,11 +870,16 @@ def add_staff():
     cursor.close()
     db.close()
 
+    # Return full URL so frontend can display QR
+    qr_url = f"/static/qrcodes/{qr_filename}" if qr_filename else None
+
     return jsonify({
         "message": "Staff added successfully",
         "qr_code": qr_filename,
+        "qr_url": qr_url,
         "id": new_id
     }), 201
+
 
 # --- GET SINGLE STAFF ---
 @app.route("/staff/<int:id>", methods=["GET"])
@@ -1227,5 +1236,6 @@ def customer_menu():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
