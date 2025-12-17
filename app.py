@@ -825,42 +825,40 @@ def get_staff():
 def add_staff():
     data = request.json
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor()
 
     # Insert staff
     cursor.execute(
         "INSERT INTO staff (name, position, contact, status) VALUES (%s, %s, %s, %s)",
         (data["name"], data["position"], data["contact"], data["status"])
     )
-    staff_id = cursor.lastrowid
+    db.commit()
 
-    # Generate QR code
-    qr_value = f"STAFF-{staff_id}"
-    qr_filename = f"staff_{staff_id}.png"
+    new_id = cursor.lastrowid  # ← get staff ID
+
+    # -------- Generate QR Code --------
+    qr_value = f"STAFF-{new_id}"
+    qr_filename = f"staff_{new_id}.png"
     qr_path = os.path.join(QR_FOLDER, qr_filename)
-    os.makedirs(QR_FOLDER, exist_ok=True)
 
-    try:
-        import qrcode
-        img = qrcode.make(qr_value)
-        img.save(qr_path)
-        cursor.execute("UPDATE staff SET qr_code=%s WHERE id=%s", (qr_filename, staff_id))
-        db.commit()
-    except Exception as e:
-        print("QR generation failed:", e)
-        qr_filename = None
+    img = qrcode.make(qr_value)
+    img.save(qr_path)
+
+    # Save QR filename to DB
+    cursor.execute(
+        "UPDATE staff SET qr_code = %s WHERE id = %s",
+        (qr_filename, new_id)
+    )
+    db.commit()
 
     cursor.close()
     db.close()
 
     return jsonify({
         "message": "Staff added successfully",
-        "id": staff_id,
         "qr_code": qr_filename,
-        "qr_url": f"/static/qrcodes/{qr_filename}" if qr_filename else None
+        "id": new_id
     }), 201
-
-
 
 # --- GET SINGLE STAFF ---
 @app.route("/staff/<int:id>", methods=["GET"])
