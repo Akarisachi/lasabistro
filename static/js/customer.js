@@ -448,9 +448,6 @@ async function loadOngoingOrders() {
             const now = new Date();
             const diffMinutes = (now.getTime() - created.getTime()) / (1000 * 60);
             const canCancel = diffMinutes <= 3 && (o.status || '').trim().toLowerCase() === 'pending';
-            console.log(o.order_id, o.status, diffMinutes.toFixed(2), canCancel);
-
-
             // Calculate total amount
             const totalAmount = (o.items || []).reduce((sum, i) => sum + (i.price * i.qty), 0);
 
