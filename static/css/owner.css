@@ -692,8 +692,8 @@ body.dark-mode #aiModal {
 }
 
 body.dark-mode #aiChatArea {
+body.dark-mode .bat,  {
   background: #2a2a2a;
-  color: #f5f5f5;
 }
 
 /* Scrollbars for dark mode */
@@ -707,4 +707,5 @@ body.dark-mode ::-webkit-scrollbar-thumb {
   background: #555;
   border-radius: 4px;
 }
+
 
