@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request, render_template
+import mysql.connector
 from flask_cors import CORS
 import os
 import qrcode
@@ -10,8 +11,6 @@ import traceback  # Ensure this is added
 from collections import Counter
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, session, redirect, url_for
-import psycopg
-from psycopg.rows import dict_row
 
 app = Flask(__name__, template_folder="main", static_folder="static")
 CORS(app)
@@ -29,10 +28,14 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # 🔗 Database Connection
 
 def get_db_connection():
-    return psycopg.connect(
-        "postgresql://restaurant_db_pj8q_user:hsImkcb315dSQsTsV7Ga1VUdebMzOw9d@dpg-d50morfgi27c73ap9510-a.oregon-postgres.render.com/restaurant_db_pj8q",
-        row_factory=dict_row
+    return mysql.connector.connect(
+        host="switchyard.proxy.rlwy.net",
+        port=3306,
+        user="root",             # replace if your Railway user is different
+        password="sXeDPzMNsNACCqmHxGXjHWyPgrpgELDX", # replace with your Railway DB password
+        database="railway"
     )
+
 
 HARDCODED_USER = "admin"
 HARDCODED_PASS = "admin123"
@@ -74,8 +77,7 @@ def owner_dashboard():
 @app.route('/dashboard_stats', methods=['GET'])
 def dashboard_stats():
     db = get_db_connection()
-    cursor = db.cursor()
-
+    cursor = db.cursor(dictionary=True)
 
     today = datetime.today()
 
@@ -88,7 +90,7 @@ def dashboard_stats():
     # -------------------------
     cursor.execute("""
         SELECT SUM(total) AS total_sales
-        FROM _orders
+        FROM orders
         WHERE status='Completed'
         AND created_at >= %s
         AND created_at < %s
@@ -101,8 +103,8 @@ def dashboard_stats():
     cursor.execute("""
         SELECT o.total, o.created_at, o.order_type,
                oi.name AS item_name, oi.qty
-        FROM _orders o
-        JOIN _order_items oi ON o.id = oi.order_id
+        FROM orders o
+        JOIN order_items oi ON o.id = oi.order_id
         WHERE o.status='Completed'
         AND o.created_at >= %s
         AND o.created_at < %s
@@ -123,7 +125,7 @@ def dashboard_stats():
     # -------------------------
     cursor.execute("""
         SELECT type, order_type
-        FROM _orders
+        FROM orders
         WHERE created_at >= %s
         AND created_at < %s
     """, (first_day, next_month))
@@ -150,7 +152,7 @@ def dashboard_stats():
     cursor.execute("""
         SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, 
                SUM(total) AS revenue
-        FROM _orders
+        FROM orders
         WHERE status='Completed'
         AND created_at >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
         GROUP BY DATE_FORMAT(created_at, '%Y-%m')
@@ -163,7 +165,7 @@ def dashboard_stats():
     # -------------------------
     cursor.execute("""
         SELECT rating, COUNT(*) AS count
-        FROM _reviews
+        FROM reviews
         WHERE rating IS NOT NULL
         GROUP BY rating
         ORDER BY count DESC
@@ -181,7 +183,7 @@ def dashboard_stats():
     # -------------------------
     # Online Users
     # -------------------------
-    cursor.execute("SELECT COUNT(*) AS count FROM _customers")
+    cursor.execute("SELECT COUNT(*) AS count FROM customers")
     online_users = cursor.fetchone()['count']
 
     cursor.close()
@@ -227,17 +229,16 @@ def dashboard_stats():
 @app.route('/menu', methods=['GET'])
 def get_menu():
     db = get_db_connection()
-    cursor = db.cursor()
-
+    cursor = db.cursor(dictionary=True)
 
     # Get menu items
-    cursor.execute("SELECT * FROM _menu ORDER BY id")
+    cursor.execute("SELECT * FROM menu ORDER BY id")
     menus = cursor.fetchall()
 
     # Get active announcements (both category-wide and specific menu)
     cursor.execute("""
         SELECT *
-        FROM _announcements
+        FROM announcements
         WHERE type='Sale'
           AND NOW() BETWEEN start_time AND end_time
     """)
@@ -276,8 +277,8 @@ def get_menu():
         # Load ingredients
         cursor.execute("""
             SELECT i.id, i.name, i.dish_category, mi.quantity_needed AS qty
-            FROM _menu_ingredients mi
-            JOIN _inventory i ON mi.ingredient_id = i.id
+            FROM menu_ingredients mi
+            JOIN inventory i ON mi.ingredient_id = i.id
             WHERE mi.menu_id = %s
         """, (menu['id'],))
         menu['ingredients'] = cursor.fetchall()
@@ -304,7 +305,7 @@ def add_menu():
         image_file.save(image_path)
         image_url = f"/static/uploads/{filename}"
 
-    cursor.execute("INSERT INTO _menu (name, category, price, image) VALUES (%s, %s, %s, %s)",
+    cursor.execute("INSERT INTO menu (name, category, price, image) VALUES (%s, %s, %s, %s)",
                    (name, category, price, image_url))
     menu_id = cursor.lastrowid
 
@@ -313,7 +314,7 @@ def add_menu():
         ingredients = json.loads(ingredients)
         for ing in ingredients:
             cursor.execute(
-                "INSERT INTO _menu_ingredients (menu_id, ingredient_id, quantity_needed) VALUES (%s, %s, %s)",
+                "INSERT INTO menu_ingredients (menu_id, ingredient_id, quantity_needed) VALUES (%s, %s, %s)",
                 (menu_id, ing['id'], ing['qty'])
             )
 
@@ -326,7 +327,7 @@ def add_menu():
 def delete_menu(id):
     db = get_db_connection()
     cursor = db.cursor()
-    cursor.execute("DELETE FROM _menu WHERE id = %s", (id,))
+    cursor.execute("DELETE FROM menu WHERE id = %s", (id,))
     db.commit()
     cursor.close()
     db.close()
@@ -342,7 +343,7 @@ def update_menu(id):
     price = request.form.get('price')
     image_file = request.files.get('image')
 
-    cursor.execute("SELECT image FROM _menu WHERE id = %s", (id,))
+    cursor.execute("SELECT image FROM menu WHERE id = %s", (id,))
     old_image = cursor.fetchone()[0]
     image_url = old_image
 
@@ -352,16 +353,16 @@ def update_menu(id):
         image_file.save(filepath)
         image_url = f"/static/uploads/{filename}"
 
-    cursor.execute("UPDATE _menu SET name=%s, category=%s, price=%s, image=%s WHERE id=%s",
+    cursor.execute("UPDATE menu SET name=%s, category=%s, price=%s, image=%s WHERE id=%s",
                    (name, category, price, image_url, id))
 
     ingredients = request.form.get('ingredients')
-    cursor.execute("DELETE FROM _menu_ingredients WHERE menu_id=%s", (id,))
+    cursor.execute("DELETE FROM menu_ingredients WHERE menu_id=%s", (id,))
     if ingredients:
         ingredients = json.loads(ingredients)
         for ing in ingredients:
             cursor.execute(
-                "INSERT INTO _menu_ingredients (menu_id, ingredient_id, quantity_needed) VALUES (%s, %s, %s)",
+                "INSERT INTO menu_ingredients (menu_id, ingredient_id, quantity_needed) VALUES (%s, %s, %s)",
                 (id, ing['id'], ing['qty'])
             )
 
@@ -373,9 +374,8 @@ def update_menu(id):
 @app.route('/menu/categories', methods=['GET'])
 def get_menu_categories():
     db = get_db_connection()
-    cursor = db.cursor()
-
-    cursor.execute("SELECT DISTINCT category FROM _menu")
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("SELECT DISTINCT category FROM menu")
     categories = [row['category'] for row in cursor.fetchall()]
     cursor.close()
     db.close()
@@ -386,11 +386,10 @@ def get_menu_categories():
 @app.route('/reservations', methods=['GET'])
 def get_reservations():
     db = get_db_connection()
-    cursor = db.cursor()
-
+    cursor = db.cursor(dictionary=True)
 
     cursor.execute("""
-        SELECT * FROM _reservations 
+        SELECT * FROM reservations 
         WHERE status='active'
         ORDER BY reservation_date, reservation_time
     """)
@@ -426,7 +425,7 @@ def add_reservation():
     guests = request.form.get('num_guests')
 
     cursor.execute("""
-        INSERT INTO _reservations (customer_name, contact_number, reservation_date, reservation_time, table_number, num_guests)
+        INSERT INTO reservations (customer_name, contact_number, reservation_date, reservation_time, table_number, num_guests)
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (name, contact, date_r, time_r, table if table else None, guests))
 
@@ -439,14 +438,13 @@ def add_reservation():
 @app.route('/available_tables', methods=['GET'])
 def available_tables():
     db = get_db_connection()
-    cursor = db.cursor()
-
+    cursor = db.cursor(dictionary=True)
 
     reservation_date = request.args.get('date')
     reservation_time = request.args.get('time')
 
     cursor.execute("""
-        SELECT table_number FROM _reservations
+        SELECT table_number FROM reservations
         WHERE reservation_date = %s AND reservation_time = %s AND status='active'
     """, (reservation_date, reservation_time))
     reserved_tables = [r['table_number'] for r in cursor.fetchall() if r['table_number']]
@@ -462,7 +460,7 @@ def available_tables():
 def mark_done(id):
     db = get_db_connection()
     cursor = db.cursor()
-    cursor.execute("UPDATE _reservations SET status='done' WHERE id=%s", (id,))
+    cursor.execute("UPDATE reservations SET status='done' WHERE id=%s", (id,))
     db.commit()
     cursor.close()
     db.close()
@@ -472,7 +470,7 @@ def mark_done(id):
 def delete_reservation(id):
     db = get_db_connection()
     cursor = db.cursor()
-    cursor.execute("DELETE FROM _reservations WHERE id = %s", (id,))
+    cursor.execute("DELETE FROM reservations WHERE id = %s", (id,))
     db.commit()
     cursor.close()
     db.close()
@@ -483,9 +481,8 @@ def delete_reservation(id):
 @app.route('/reviews', methods=['GET'])
 def get_reviews():
     db = get_db_connection()
-    cursor = db.cursor()
-
-    cursor.execute("SELECT * FROM _reviews ORDER BY review_time DESC")
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM reviews ORDER BY review_time DESC")
     data = cursor.fetchall()
     cursor.close()
     db.close()
@@ -496,9 +493,8 @@ def get_reviews():
 @app.route('/inventory', methods=['GET'])
 def get_inventory():
     db = get_db_connection()
-    cursor = db.cursor()
-
-    cursor.execute("SELECT * FROM _inventory")
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM inventory")
     data = cursor.fetchall()
     cursor.close()
     db.close()
@@ -507,9 +503,8 @@ def get_inventory():
 @app.route('/inventory/<int:id>', methods=['GET'])
 def get_single_inventory(id):
     db = get_db_connection()
-    cursor = db.cursor()
-
-    cursor.execute("SELECT * FROM _inventory WHERE id=%s", (id,))
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM inventory WHERE id=%s", (id,))
     data = cursor.fetchone()
     cursor.close()
     db.close()
@@ -522,8 +517,7 @@ def get_single_inventory(id):
 def add_inventory():
     try:
         db = get_db_connection()
-        cursor = db.cursor()
-
+        cursor = db.cursor(dictionary=True)
 
         name = request.form.get('name')
         quantity = float(request.form.get('quantity'))
@@ -536,20 +530,20 @@ def add_inventory():
         # Relaxed validation (unchanged)
         if dish_category:
             categories = [c.strip() for c in dish_category.split(',')]
-            cursor.execute("SELECT DISTINCT category FROM _menu WHERE category IN (%s)" % ','.join(['%s']*len(categories)), categories)
+            cursor.execute("SELECT DISTINCT category FROM menu WHERE category IN (%s)" % ','.join(['%s']*len(categories)), categories)
             matching_categories = cursor.fetchall()
             if not matching_categories:
                 pass
 
         # Check for existing ingredient by name and unit only (ignore category for merging)
         
-        cursor.execute("UPDATE _inventory SET quantity = quantity + %s, dish_category = COALESCE(%s, dish_category), ingredient_type = COALESCE(%s, ingredient_type) WHERE name=%s AND unit=%s",
+        cursor.execute("UPDATE inventory SET quantity = quantity + %s, dish_category = COALESCE(%s, dish_category), ingredient_type = COALESCE(%s, ingredient_type) WHERE name=%s AND unit=%s",
                (quantity, dish_category, ingredient_type, name, unit))
         if cursor.rowcount > 0:
             message = "✅ Ingredient quantity updated successfully"
         else:
             # Insert new
-            cursor.execute("""INSERT INTO _inventory (name, quantity, unit, threshold, category, dish_category, ingredient_type)VALUES (%s,%s,%s,%s,%s,%s,%s)""", (name, quantity, unit, threshold, category, dish_category, ingredient_type))
+            cursor.execute("""INSERT INTO inventory (name, quantity, unit, threshold, category, dish_category, ingredient_type)VALUES (%s,%s,%s,%s,%s,%s,%s)""", (name, quantity, unit, threshold, category, dish_category, ingredient_type))
             message = "✅ Ingredient added successfully"
 
         db.commit()
@@ -565,8 +559,7 @@ def add_inventory():
 def update_inventory(id):
     try:
         db = get_db_connection()
-        cursor = db.cursor()
-
+        cursor = db.cursor(dictionary=True)
 
         name = request.form.get('name')
         quantity = float(request.form.get('quantity'))
@@ -578,7 +571,7 @@ def update_inventory(id):
 
         if dish_category:
             categories = [c.strip() for c in dish_category.split(',')]
-            cursor.execute("SELECT DISTINCT category FROM _menu WHERE category IN (%s)" % ','.join(['%s']*len(categories)), categories)
+            cursor.execute("SELECT DISTINCT category FROM menu WHERE category IN (%s)" % ','.join(['%s']*len(categories)), categories)
             matching_categories = cursor.fetchall()
             if not matching_categories:
                 pass
@@ -602,7 +595,7 @@ def update_inventory(id):
 def delete_inventory(id):
     db = get_db_connection()
     cursor = db.cursor()
-    cursor.execute("DELETE FROM _inventory WHERE id=%s", (id,))
+    cursor.execute("DELETE FROM inventory WHERE id=%s", (id,))
     db.commit()
     cursor.close()
     db.close()
@@ -613,15 +606,14 @@ def delete_inventory(id):
 @app.route('/orders', methods=['GET'])
 def get_orders():
     db = get_db_connection()
-    cursor = db.cursor()
-
+    cursor = db.cursor(dictionary=True)
 
     cursor.execute("""
         SELECT o.id, o.username, o.total, o.status, o.created_at,
                o.type, o.table_number, o.order_type,
                oi.menu_id, oi.name as item_name, oi.qty, oi.price
-        FROM _orders o
-        JOIN _order_items oi ON o.id = oi.order_id
+        FROM orders o
+        JOIN order_items oi ON o.id = oi.order_id
         ORDER BY o.created_at DESC
     """)
 
@@ -661,11 +653,10 @@ def update_order(order_id):
     if not new_status:
         return jsonify({"status":"error","message":"Missing status"}), 400
 
-        cursor = db.cursor()
-
+    cursor = db.cursor(dictionary=True)
 
     # Fetch previous status to prevent double deduction
-    cursor.execute("SELECT status FROM _orders WHERE id=%s", (order_id,))
+    cursor.execute("SELECT status FROM orders WHERE id=%s", (order_id,))
     order = cursor.fetchone()
     if not order:
         cursor.close()
@@ -679,7 +670,7 @@ def update_order(order_id):
 
     # Only decrease inventory if changing from non-completed -> Completed
     if previous_status != 'Completed' and new_status == 'Completed':
-        cursor.execute("SELECT menu_id, qty FROM _order_items WHERE order_id=%s", (order_id,))
+        cursor.execute("SELECT menu_id, qty FROM order_items WHERE order_id=%s", (order_id,))
         items = cursor.fetchall()
         for item in items:
             menu_id = item['menu_id']
@@ -687,7 +678,7 @@ def update_order(order_id):
 
             if menu_id:
                 # Get ingredients
-                cursor.execute("SELECT ingredient_id, quantity_needed FROM _menu_ingredients WHERE menu_id=%s", (menu_id,))
+                cursor.execute("SELECT ingredient_id, quantity_needed FROM menu_ingredients WHERE menu_id=%s", (menu_id,))
                 ingredients = cursor.fetchall()
                 for ing in ingredients:
                     ingredient_id = ing['ingredient_id']
@@ -718,8 +709,7 @@ def create_order():
     table_number = data.get('table_number') if type_ == 'Walkin' else None
 
     db = get_db_connection()
-    cursor = db.cursor()
-
+    cursor = db.cursor(dictionary=True)
 
     total = 0
     order_items = []
@@ -733,7 +723,7 @@ def create_order():
             # Fetch current active announcement for this menu item
             cursor.execute("""
                 SELECT new_price, discount
-                FROM _announcements
+                FROM announcements
                 WHERE menu_id=%s AND NOW() BETWEEN start_time AND end_time
                 ORDER BY discount DESC
                 LIMIT 1
@@ -744,7 +734,7 @@ def create_order():
             if ann:
                 price = float(ann['new_price'])
             else:
-                cursor.execute("SELECT price FROM _menu WHERE id=%s", (menu_id,))
+                cursor.execute("SELECT price FROM menu WHERE id=%s", (menu_id,))
                 price = float(cursor.fetchone()['price'])
         else:
             price = float(i.get('price', 0))
@@ -761,7 +751,7 @@ def create_order():
 
     # Insert order
     cursor.execute("""
-        INSERT INTO _orders (username, total, status, type, order_type, table_number, created_at)
+        INSERT INTO orders (username, total, status, type, order_type, table_number, created_at)
         VALUES (%s,%s,'Pending',%s,%s,%s,NOW())
     """, (None if type_ == 'Walkin' else data.get('username'),
           total, type_, order_type, table_number))
@@ -775,7 +765,7 @@ def create_order():
         price = item['price']
 
         cursor.execute("""
-            INSERT INTO _order_items (order_id, menu_id, name, qty, price)
+            INSERT INTO order_items (order_id, menu_id, name, qty, price)
             VALUES (%s,%s,%s,%s,%s)
         """, (order_id, menu_id, name, qty, price))
 
@@ -783,7 +773,7 @@ def create_order():
             # Deduct inventory
             cursor.execute("""
                 SELECT ingredient_id, quantity_needed
-                FROM _menu_ingredients
+                FROM menu_ingredients
                 WHERE menu_id=%s
             """, (menu_id,))
             ingredients = cursor.fetchall()
@@ -808,9 +798,8 @@ def create_order():
 @app.route("/staff", methods=["GET"])
 def get_staff():
     db = get_db_connection()
-    cursor = db.cursor()
-
-    cursor.execute("SELECT * FROM _staff ORDER BY id DESC")
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM staff ORDER BY id DESC")
     data = cursor.fetchall()
     cursor.close()
     db.close()
@@ -825,7 +814,7 @@ def add_staff():
 
     # Insert staff
     cursor.execute(
-        "INSERT INTO _staff (name, position, contact, status) VALUES (%s, %s, %s, %s)",
+        "INSERT INTO staff (name, position, contact, status) VALUES (%s, %s, %s, %s)",
         (data["name"], data["position"], data["contact"], data["status"])
     )
     db.commit()
@@ -842,7 +831,7 @@ def add_staff():
 
     # Save QR filename to DB
     cursor.execute(
-        "UPDATE _staff SET qr_code = %s WHERE id = %s",
+        "UPDATE staff SET qr_code = %s WHERE id = %s",
         (qr_filename, new_id)
     )
     db.commit()
@@ -860,9 +849,8 @@ def add_staff():
 @app.route("/staff/<int:id>", methods=["GET"])
 def get_single_staff(id):
     db = get_db_connection()
-    cursor = db.cursor()
-
-    cursor.execute("SELECT * FROM _staff WHERE id = %s", (id,))
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM staff WHERE id = %s", (id,))
     staff = cursor.fetchone()
     cursor.close()
     db.close()
@@ -875,7 +863,7 @@ def update_staff(id):
     db = get_db_connection()
     cursor = db.cursor()
     cursor.execute(
-        "UPDATE _staff SET name=%s, position=%s, contact=%s, status=%s WHERE id=%s",
+        "UPDATE staff SET name=%s, position=%s, contact=%s, status=%s WHERE id=%s",
         (data["name"], data["position"], data["contact"], data["status"], id)
     )
     db.commit()
@@ -888,7 +876,7 @@ def update_staff(id):
 def delete_staff(id):
     db = get_db_connection()
     cursor = db.cursor()
-    cursor.execute("DELETE FROM _staff WHERE id=%s", (id,))
+    cursor.execute("DELETE FROM staff WHERE id=%s", (id,))
     db.commit()
     cursor.close()
     db.close()
@@ -916,10 +904,10 @@ def attendance_scan():
     staff_id = int(m.group(1))
 
     db = get_db_connection()
-    cur = db.cursor()
+    cur = db.cursor(dictionary=True)
 
     # FIXED: correct columns!
-    cur.execute("SELECT id, name FROM _staff WHERE id = %s", (staff_id,))
+    cur.execute("SELECT id, name FROM staff WHERE id = %s", (staff_id,))
     staff = cur.fetchone()
 
     if not staff:
@@ -930,7 +918,7 @@ def attendance_scan():
     today = today_date()
 
     cur.execute("""
-        SELECT * FROM _staff_attendance
+        SELECT * FROM staff_attendance
         WHERE staff_id = %s AND date_record = %s
         ORDER BY attendance_id DESC
         LIMIT 1
@@ -941,13 +929,13 @@ def attendance_scan():
 
     if rec is None:
         cur.execute("""
-            INSERT INTO _staff_attendance (staff_id, date_record, time_in, status)
+            INSERT INTO staff_attendance (staff_id, date_record, time_in, status)
             VALUES (%s, %s, %s, %s)
         """, (staff_id, today, now, 'Present'))
         db.commit()
 
         inserted_id = cur.lastrowid
-        cur.execute("SELECT * FROM _staff_attendance WHERE attendance_id = %s", (inserted_id,))
+        cur.execute("SELECT * FROM staff_attendance WHERE attendance_id = %s", (inserted_id,))
         new_rec = cur.fetchone()
 
         cur.close()
@@ -966,7 +954,7 @@ def attendance_scan():
         """, (now, 'Left', rec['attendance_id']))
         db.commit()
 
-        cur.execute("SELECT * FROM _staff_attendance WHERE attendance_id = %s", (rec['attendance_id'],))
+        cur.execute("SELECT * FROM staff_attendance WHERE attendance_id = %s", (rec['attendance_id'],))
         updated_rec = cur.fetchone()
 
         cur.close()
@@ -979,12 +967,12 @@ def attendance_scan():
 
     # record already closed → new time_in
     cur.execute("""
-        INSERT INTO _staff_attendance (staff_id, date_record, time_in, status)
+        INSERT INTO staff_attendance (staff_id, date_record, time_in, status)
         VALUES (%s, %s, %s, %s)
     """, (staff_id, today, now, 'Present'))
     db.commit()
     new_id = cur.lastrowid
-    cur.execute("SELECT * FROM _staff_attendance WHERE attendance_id = %s", (new_id,))
+    cur.execute("SELECT * FROM staff_attendance WHERE attendance_id = %s", (new_id,))
     new_rec = cur.fetchone()
 
     cur.close()
@@ -999,7 +987,7 @@ def attendance_scan():
 @app.route('/get_attendance', methods=['GET'])
 def get_attendance():
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
 
     # Read filters from query string
     month = request.args.get('month')      # expecting "YYYY-MM"
@@ -1017,8 +1005,8 @@ def get_attendance():
                s.id AS staff_id,
                s.name,
                s.position
-        FROM _staff_attendance sa
-        JOIN _staff s ON sa.staff_id = s.id
+        FROM staff_attendance sa
+        JOIN staff s ON sa.staff_id = s.id
     """
     where = []
     params = []
@@ -1078,32 +1066,31 @@ def add_announcement():
         return jsonify({"error":"Missing required fields"}), 400
 
     db = get_db_connection()
-    cursor = db.cursor()
-
+    cursor = db.cursor(dictionary=True)
 
     if type_ in ['Sale','Promotion'] and target:
         if target.startswith('cat:'):
             category = target.replace('cat:','')
             # Fetch all menus in that category
-            cursor.execute("SELECT id, price FROM _menu WHERE category=%s", (category,))
+            cursor.execute("SELECT id, price FROM menu WHERE category=%s", (category,))
             items = cursor.fetchall()
             for item in items:
                 original = float(item['price'])
                 new_price = round(original*(100-discount)/100,2)
                 cursor.execute("""
-                    INSERT INTO _announcements
+                    INSERT INTO announcements
                     (title, message, type, menu_id, target, original_price, new_price, discount, start_time, end_time)
                     VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 """, (title,f"{discount}% OFF", type_, item['id'], target, original, new_price, discount, start, end))
         else:
             # Specific menu
             menu_id = int(target.replace("item:",""))
-            cursor.execute("SELECT price, name FROM _menu WHERE id=%s",(menu_id,))
+            cursor.execute("SELECT price, name FROM menu WHERE id=%s",(menu_id,))
             item = cursor.fetchone()
             original = float(item['price'])
             new_price = round(original*(100-discount)/100,2)
             cursor.execute("""
-                INSERT INTO _announcements
+                INSERT INTO announcements
                 (title, message, type, menu_id, target, original_price, new_price, discount, start_time, end_time)
                 VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             """,(title,f"{discount}% OFF",type_,menu_id,target,original,new_price,discount,start,end))
@@ -1124,12 +1111,11 @@ def add_announcement():
 @app.route('/announcements', methods=['GET'])
 def get_announcements():
     db = get_db_connection()
-    cursor = db.cursor()
-
+    cursor = db.cursor(dictionary=True)
 
     # Update status automatically
     cursor.execute("""
-        UPDATE _announcements
+        UPDATE announcements
         SET status = CASE
             WHEN NOW() < start_time THEN 'scheduled'
             WHEN NOW() BETWEEN start_time AND end_time THEN 'active'
@@ -1143,7 +1129,7 @@ def get_announcements():
             a.*,
             NOW() BETWEEN a.start_time AND a.end_time AS is_active,
             m.name AS menu_name
-        FROM _announcements a
+        FROM announcements a
         LEFT JOIN menu m ON a.menu_id = m.id
         ORDER BY a.created_at DESC
     """)
@@ -1164,7 +1150,7 @@ def delete_announcement(announcement_id):
     db = get_db_connection()
     cursor = db.cursor()
     try:
-        cursor.execute("DELETE FROM _announcements WHERE id=%s", (announcement_id,))
+        cursor.execute("DELETE FROM announcements WHERE id=%s", (announcement_id,))
         db.commit()
         cursor.close()
         db.close()
@@ -1179,7 +1165,7 @@ def delete_announcement(announcement_id):
 @app.route('/customer/menu', methods=['GET'])
 def customer_menu():
     db = get_db_connection()
-    cursor = db.cursor()
+    cursor = db.cursor(dictionary=True)
 
     cursor.execute("""
         SELECT 
@@ -1190,14 +1176,14 @@ def customer_menu():
             m.price AS original_price,
             COALESCE(a.new_price, m.price) AS display_price,
             a.discount
-        FROM _menu m
+        FROM menu m
         LEFT JOIN (
             SELECT a1.*
-            FROM _announcements a1
+            FROM announcements a1
             JOIN (
                 -- Pick the announcement with the highest discount per menu item
                 SELECT menu_id, MAX(discount) AS max_discount
-                FROM _announcements
+                FROM announcements
                 WHERE NOW() BETWEEN start_time AND end_time
                 GROUP BY menu_id
             ) a2 ON a1.menu_id = a2.menu_id AND a1.discount = a2.max_discount
@@ -1214,4 +1200,3 @@ def customer_menu():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
