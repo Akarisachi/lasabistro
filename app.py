@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify, request, render_template, current_app
 import mysql.connector
 from flask_cors import CORS
 import os
@@ -303,10 +303,13 @@ def add_menu():
         filename = secure_filename(image_file.filename)
         image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         image_file.save(image_path)
+        # Store relative URL for frontend access
         image_url = f"/static/uploads/{filename}"
 
-    cursor.execute("INSERT INTO menu (name, category, price, image) VALUES (%s, %s, %s, %s)",
-                   (name, category, price, image_url))
+    cursor.execute(
+        "INSERT INTO menu (name, category, price, image) VALUES (%s, %s, %s, %s)",
+        (name, category, price, image_url)
+    )
     menu_id = cursor.lastrowid
 
     ingredients = request.form.get('ingredients')
@@ -321,7 +324,12 @@ def add_menu():
     db.commit()
     cursor.close()
     db.close()
-    return jsonify({"message": "✅ Menu item with ingredients added successfully"}), 201
+    return jsonify({
+        "message": "✅ Menu item with ingredients added successfully",
+        "menu_id": menu_id,
+        "image_url": image_url
+    }), 201
+
 
 @app.route('/menu/<int:id>', methods=['DELETE'])
 def delete_menu(id):
@@ -343,18 +351,23 @@ def update_menu(id):
     price = request.form.get('price')
     image_file = request.files.get('image')
 
+    # Get old image
     cursor.execute("SELECT image FROM menu WHERE id = %s", (id,))
     old_image = cursor.fetchone()[0]
     image_url = old_image
 
+    # Handle new image
     if image_file:
         filename = secure_filename(image_file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        image_file.save(filepath)
+        image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        image_file.save(image_path)
         image_url = f"/static/uploads/{filename}"
 
-    cursor.execute("UPDATE menu SET name=%s, category=%s, price=%s, image=%s WHERE id=%s",
-                   (name, category, price, image_url, id))
+    # Update menu item
+    cursor.execute(
+        "UPDATE menu SET name=%s, category=%s, price=%s, image=%s WHERE id=%s",
+        (name, category, price, image_url, id)
+    )
 
     ingredients = request.form.get('ingredients')
     cursor.execute("DELETE FROM menu_ingredients WHERE menu_id=%s", (id,))
@@ -369,7 +382,10 @@ def update_menu(id):
     db.commit()
     cursor.close()
     db.close()
-    return jsonify({"message": "✏️ Menu item updated"}), 200
+    return jsonify({
+        "message": "✏️ Menu item updated",
+        "image_url": image_url
+    }), 200
 
 @app.route('/menu/categories', methods=['GET'])
 def get_menu_categories():
@@ -824,17 +840,28 @@ def add_staff():
     # -------- Generate QR Code --------
     qr_value = f"STAFF-{new_id}"
     qr_filename = f"staff_{new_id}.png"
+
+    # Build the path inside /static/qrcodes
+    QR_FOLDER = os.path.join(current_app.static_folder, "qrcodes")
+    os.makedirs(QR_FOLDER, exist_ok=True)  # make sure folder exists
+
     qr_path = os.path.join(QR_FOLDER, qr_filename)
 
-    img = qrcode.make(qr_value)
-    img.save(qr_path)
+    try:
+        import qrcode
+        img = qrcode.make(qr_value)
+        img.save(qr_path)
+    except Exception as e:
+        print("QR code generation failed:", e)
+        qr_filename = None
 
-    # Save QR filename to DB
-    cursor.execute(
-        "UPDATE staff SET qr_code = %s WHERE id = %s",
-        (qr_filename, new_id)
-    )
-    db.commit()
+    # Update DB if QR was created
+    if qr_filename:
+        cursor.execute(
+            "UPDATE staff SET qr_code = %s WHERE id = %s",
+            (qr_filename, new_id)
+        )
+        db.commit()
 
     cursor.close()
     db.close()
@@ -1200,4 +1227,5 @@ def customer_menu():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
