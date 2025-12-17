@@ -241,7 +241,7 @@ def popular_menu():
     db = get_db_connection()
     cursor = db.cursor(dictionary=True)
     cursor.execute("""
-        SSELECT 
+        SELECT 
             m.id,
             MAX(m.name) AS name,
             MAX(m.category) AS category,
@@ -440,6 +440,7 @@ def send_message():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
 
