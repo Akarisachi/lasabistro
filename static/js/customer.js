@@ -444,10 +444,12 @@ async function loadOngoingOrders() {
             const orderTime = new Date(o.created_at).toLocaleString();
 
             // Calculate time difference in minutes
-            const diffMinutes = (Date.now() - new Date(o.created_at).getTime()) / 1000 / 60;
-
-            // Ensure status comparison is robust and Cancel button shows if order is pending & within 3 mins
+            const created = new Date(o.created_at);
+            const now = new Date();
+            const diffMinutes = (now.getTime() - created.getTime()) / (1000 * 60);
             const canCancel = diffMinutes <= 3 && (o.status || '').trim().toLowerCase() === 'pending';
+            console.log(o.order_id, o.status, diffMinutes.toFixed(2), canCancel);
+
 
             // Calculate total amount
             const totalAmount = (o.items || []).reduce((sum, i) => sum + (i.price * i.qty), 0);
