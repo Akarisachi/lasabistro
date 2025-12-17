@@ -1,5 +1,5 @@
 // static/js/customer.js
-const API_URL = "https://lasabistro-11.onrender.com/";
+const API_URL = "https://lasabistro-11.onrender.com";
 let allMenus = [];
 let cart = [];
 let currentItem = null;
