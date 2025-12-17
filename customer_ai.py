@@ -139,7 +139,8 @@ def handle_customer_ai_chat(data, get_db_connection):
         # ---------------- PLACE ORDER ----------------
         elif "order" in msg_lower:
             matches = re.findall(r"(\d+)\s+([\w\s]+)", user_message)
-            if not matches:                    reply.append(
+            if not matches:                    
+                reply.append(
                     "🛒 **To place an order:**\n"
                     "Type the quantity followed by the dish name.\n"
                     "Example: '2 Adobo, 1 Sinigang'\n"
@@ -283,6 +284,7 @@ def handle_customer_ai_chat(data, get_db_connection):
         db.close()
 
     return {"reply": "\n".join(reply)}
+
 
 
 
