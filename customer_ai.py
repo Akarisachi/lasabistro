@@ -19,7 +19,7 @@ def handle_customer_ai_chat(data, get_db_connection):
     time.sleep(random.uniform(0.3, 0.7))  # simulate AI thinking
 
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor()
     reply = []
 
     msg_lower = user_message.lower()
@@ -246,3 +246,4 @@ def handle_customer_ai_chat(data, get_db_connection):
         db.close()
 
     return {"reply": "\n".join(reply)}
+
