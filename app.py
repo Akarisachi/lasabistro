@@ -21,6 +21,10 @@ from ai_routes import ai_bp
 app.register_blueprint(ai_bp)
 # 📁 Folder to save uploaded images
 UPLOAD_FOLDER = os.path.join(app.static_folder, "uploads")
+# 📁 Folder to save staff QR codes
+QR_FOLDER = os.path.join(app.static_folder, "qrcodes")
+os.makedirs(QR_FOLDER, exist_ok=True)
+
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
@@ -833,32 +837,39 @@ def add_staff():
         (data["name"], data["position"], data["contact"], data["status"])
     )
     db.commit()
-
     new_id = cursor.lastrowid  # ← get staff ID
 
-    # -------- Generate QR Code --------
+    # Generate QR Code
     qr_value = f"STAFF-{new_id}"
     qr_filename = f"staff_{new_id}.png"
     qr_path = os.path.join(QR_FOLDER, qr_filename)
 
-    img = qrcode.make(qr_value)
-    img.save(qr_path)
+    try:
+        img = qrcode.make(qr_value)
+        img.save(qr_path)
+    except Exception as e:
+        print("QR code generation failed:", e)
+        qr_filename = None
 
-    # Save QR filename to DB
-    cursor.execute(
-        "UPDATE staff SET qr_code = %s WHERE id = %s",
-        (qr_filename, new_id)
-    )
-    db.commit()
+    # Save QR filename to DB if QR was created
+    if qr_filename:
+        cursor.execute(
+            "UPDATE staff SET qr_code = %s WHERE id = %s",
+            (qr_filename, new_id)
+        )
+        db.commit()
 
     cursor.close()
     db.close()
 
+    qr_url = f"/static/qrcodes/{qr_filename}" if qr_filename else None
     return jsonify({
         "message": "Staff added successfully",
         "qr_code": qr_filename,
+        "qr_url": qr_url,
         "id": new_id
     }), 201
+
 
 # --- GET SINGLE STAFF ---
 @app.route("/staff/<int:id>", methods=["GET"])
@@ -1215,6 +1226,7 @@ def customer_menu():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
 
