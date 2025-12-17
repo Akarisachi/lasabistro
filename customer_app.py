@@ -166,35 +166,58 @@ def customer_menu():
     cursor.execute("""
         SELECT 
             m.id,
-            m.name,
-            m.category,
-            m.price AS original_price,
+            MAX(m.name) AS name,
+            MAX(m.category) AS category,
+            MAX(m.price) AS original_price,
+        
             COALESCE(
-                CASE WHEN menu_announce.discount > 0 THEN m.price * (1 - menu_announce.discount/100) END,
-                CASE WHEN cat_announce.discount > 0 THEN m.price * (1 - cat_announce.discount/100) END,
-                CASE WHEN global_announce.discount > 0 THEN m.price * (1 - global_announce.discount/100) END,
-                m.price
+                MAX(CASE WHEN menu_announce.discount > 0 THEN m.price * (1 - menu_announce.discount/100) END),
+                MAX(CASE WHEN cat_announce.discount > 0 THEN m.price * (1 - cat_announce.discount/100) END),
+                MAX(CASE WHEN global_announce.discount > 0 THEN m.price * (1 - global_announce.discount/100) END),
+                MAX(m.price)
             ) AS display_price,
-            COALESCE(menu_announce.discount, cat_announce.discount, global_announce.discount, 0) AS discount,
-            COALESCE(menu_announce.start_time, cat_announce.start_time, global_announce.start_time) AS start_date,
-            COALESCE(menu_announce.end_time, cat_announce.end_time, global_announce.end_time) AS end_date,
-            m.image,
-            COALESCE(SUM(oi.qty),0) AS orders_count
+        
+            COALESCE(
+                MAX(menu_announce.discount),
+                MAX(cat_announce.discount),
+                MAX(global_announce.discount),
+                0
+            ) AS discount,
+        
+            MAX(COALESCE(
+                menu_announce.start_time,
+                cat_announce.start_time,
+                global_announce.start_time
+            )) AS start_date,
+        
+            MAX(COALESCE(
+                menu_announce.end_time,
+                cat_announce.end_time,
+                global_announce.end_time
+            )) AS end_date,
+        
+            MAX(m.image) AS image,
+            COALESCE(SUM(oi.qty), 0) AS orders_count
+        
         FROM menu m
         LEFT JOIN announcements menu_announce
-            ON menu_announce.menu_id = m.id 
+            ON menu_announce.menu_id = m.id
             AND menu_announce.type='sale'
             AND NOW() BETWEEN menu_announce.start_time AND menu_announce.end_time
+        
         LEFT JOIN announcements cat_announce
-            ON cat_announce.target = CONCAT('cat:', m.category) 
+            ON cat_announce.target = CONCAT('cat:', m.category)
             AND cat_announce.type='sale'
             AND NOW() BETWEEN cat_announce.start_time AND cat_announce.end_time
+        
         LEFT JOIN announcements global_announce
-            ON global_announce.target = 'all' 
+            ON global_announce.target = 'all'
             AND global_announce.type='sale'
             AND NOW() BETWEEN global_announce.start_time AND global_announce.end_time
+        
         LEFT JOIN order_items oi ON m.id = oi.menu_id
-        GROUP BY m.id
+        GROUP BY m.id;
+
     """)
 
     menus = cursor.fetchall()
@@ -218,12 +241,18 @@ def popular_menu():
     db = get_db_connection()
     cursor = db.cursor(dictionary=True)
     cursor.execute("""
-        SELECT m.id, m.name, m.category, m.price, m.image, SUM(oi.qty) AS total_ordered
+        SSELECT 
+            m.id,
+            MAX(m.name) AS name,
+            MAX(m.category) AS category,
+            MAX(m.price) AS price,
+            MAX(m.image) AS image,
+            COALESCE(SUM(oi.qty),0) AS total_ordered
         FROM menu m
         LEFT JOIN order_items oi ON m.id = oi.menu_id
         GROUP BY m.id
         ORDER BY total_ordered DESC
-        LIMIT 3
+        LIMIT 3;
     """)
     popular = cursor.fetchall()
     cursor.close()
@@ -411,6 +440,7 @@ def send_message():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
 
