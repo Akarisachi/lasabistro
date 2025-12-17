@@ -435,33 +435,40 @@ async function loadOngoingOrders() {
 
         const activeOrders = orders.filter(o => ['pending', 'in progress'].includes((o.status || '').toLowerCase()));
         if (activeOrders.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center">No ongoing orders</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center">No ongoing orders</td></tr>`;
             return;
         }
 
         activeOrders.forEach(o => {
             const items = (o.items || []).map(i => `${i.name} x${i.qty}`).join(', ');
             const orderTime = new Date(o.created_at).toLocaleString();
-            const diffMinutes = (new Date() - new Date(o.created_at)) / 1000 / 60;
-            const canCancel = diffMinutes <= 3 && o.status.toLowerCase() === 'pending';
 
-            // Calculate total amount per order
+            // Calculate time difference in minutes
+            const diffMinutes = (Date.now() - new Date(o.created_at).getTime()) / 1000 / 60;
+
+            // Ensure status comparison is robust and Cancel button shows if order is pending & within 3 mins
+            const canCancel = diffMinutes <= 3 && (o.status || '').trim().toLowerCase() === 'pending';
+
+            // Calculate total amount
             const totalAmount = (o.items || []).reduce((sum, i) => sum + (i.price * i.qty), 0);
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-        <td>${o.order_id}</td>
-        <td>${items}</td>
-        <td>₱${totalAmount.toFixed(2)}</td>
-        <td>${o.status}</td>
-        <td>${orderTime}</td>
-        <td>${canCancel ? `<button onclick="cancelOrder(${o.order_id})">Cancel</button>` : '-'}</td>
-    `;
+                <td>${o.order_id}</td>
+                <td>${items}</td>
+                <td>₱${totalAmount.toFixed(2)}</td>
+                <td>${o.status}</td>
+                <td>${orderTime}</td>
+                <td>${canCancel ? `<button onclick="cancelOrder('${o.order_id}')">Cancel</button>` : '-'}</td>
+            `;
             tbody.appendChild(tr);
         });
 
-    } catch (err) { console.error(err); }
+    } catch (err) {
+        console.error(err);
+    }
 }
+
 
 async function loadPastOrders() {
     try {
