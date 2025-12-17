@@ -308,7 +308,7 @@ body {
 document.addEventListener("DOMContentLoaded", () => {
   const menuContainer = document.getElementById("menu-items");
 
-  fetch("http://127.0.0.1:5001/popular_menu") 
+  fetch("https://lasabistro-11.onrender.com/popular_menu") 
     .then(response => response.json())
     .then(data => {
       menuContainer.innerHTML = "";
