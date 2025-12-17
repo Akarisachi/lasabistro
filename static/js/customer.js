@@ -36,11 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // load everything
-    loadCustomerMenu();
-    loadOngoingOrders()
-    loadPastOrders()
-
     // periodic refresh for orders (optional)
     setInterval(() => {
         loadOngoingOrders()
