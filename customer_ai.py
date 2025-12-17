@@ -15,7 +15,8 @@ def handle_customer_ai_chat(data, get_db_connection):
 
     if not user_message:
         return {"reply": "Please type or speak a message."}
-
+        
+    thinking_message = "🤖 Thinking..."
     time.sleep(random.uniform(0.3, 0.7))  # simulate AI thinking
 
     db = get_db_connection()
@@ -135,79 +136,115 @@ def handle_customer_ai_chat(data, get_db_connection):
                 reply.append("❌ You don’t have any previous orders.")
 
         # ---------------- PLACE ORDER ----------------
-        elif "order" in msg_lower:
-            matches = re.findall(r"(\d+)\s+([\w\s]+)", user_message)
-            items = []
-
-            for qty, name in matches:
-                cursor.execute(
-                    "SELECT id, name, price FROM menu WHERE name LIKE %s LIMIT 1",
-                    (f"%{name.strip()}%",)
-                )
-                m = cursor.fetchone()
-                if m:
-                    items.append({
-                        "id": m["id"],
-                        "name": m["name"],
-                        "qty": int(qty),
-                        "price": float(m["price"])
-                    })
-
-            if items:
-                total = sum(i['qty'] * i['price'] for i in items)
-                cursor.execute(
-                    "INSERT INTO orders (username,total,status,type,created_at) VALUES (%s,%s,'Pending','Online',NOW())",
-                    (username, total)
-                )
-                order_id = cursor.lastrowid
-
-                for i in items:
-                    cursor.execute(
-                        "INSERT INTO order_items (order_id,menu_id,name,qty,price) VALUES (%s,%s,%s,%s,%s)",
-                        (order_id, i['id'], i['name'], i['qty'], i['price'])
-                    )
-
-                db.commit()
-                reply.append(f"✅ **Order placed!**\nOrder ID: {order_id}\nTotal: ₱{total:.2f}")
-            else:
-                reply.append("❌ I couldn't recognize the items you ordered.")
-
-        # ---------------- ORDER STATUS ----------------
-        elif "status" in msg_lower:
-            order_id = re.findall(r"\b\d+\b", user_message)
-
-            if order_id:
-                oid = int(order_id[0])
-                cursor.execute(
-                    "SELECT status,total,created_at FROM orders WHERE id=%s AND username=%s",
-                    (oid, username)
-                )
-                order = cursor.fetchone()
-
-                if order:
+        # ---------------- PLACE ORDER ----------------
+            elif "order" in msg_lower:
+                matches = re.findall(r"(\d+)\s+([\w\s]+)", user_message)
+                if not matches:
                     reply.append(
-                        f"📦 **Order {oid}**\n"
-                        f"- Status: {order['status']}\n"
-                        f"- Total: ₱{order['total']:.2f}\n"
-                        f"- Date: {order['created_at']}"
+                        "🛒 **To place an order:**\n"
+                        "Type the quantity followed by the dish name.\n"
+                        "Example: '2 Adobo, 1 Sinigang'\n"
+                        "Here are some suggestions from our menu:"
                     )
+                    # Suggest top 3 menu items
+                    for m in menu[:3]:
+                        reply.append(f"• {m['name']} ({m['category']}) — ₱{m['price']:.2f}")
+                    # Suggest top-selling item
+                    if sales:
+                        top = sales[0]
+                        reply.append(f"💡 Customers also love: {top['name']} (ordered {top['total_qty']} times)")
                 else:
-                    reply.append("❌ Order not found.")
-            else:
-                cursor.execute("""
-                    SELECT id,status,total FROM orders
-                    WHERE username=%s
-                    ORDER BY created_at DESC
-                    LIMIT 3
-                """, (username,))
-                orders = cursor.fetchall()
+                    items = []
+                    for qty, name in matches:
+                        cursor.execute(
+                            "SELECT id, name, price FROM menu WHERE name LIKE %s LIMIT 1",
+                            (f"%{name.strip()}%",)
+                        )
+                        m = cursor.fetchone()
+                        if m:
+                            items.append({
+                                "id": m["id"],
+                                "name": m["name"],
+                                "qty": int(qty),
+                                "price": float(m["price"])
+                            })
+            
+                    if items:
+                        total = sum(i['qty'] * i['price'] for i in items)
+                        cursor.execute(
+                            "INSERT INTO orders (username,total,status,type,created_at) VALUES (%s,%s,'Pending','Online',NOW())",
+                            (username, total)
+                        )
+                        order_id = cursor.lastrowid
+            
+                        for i in items:
+                            cursor.execute(
+                                "INSERT INTO order_items (order_id,menu_id,name,qty,price) VALUES (%s,%s,%s,%s,%s)",
+                                (order_id, i['id'], i['name'], i['qty'], i['price'])
+                            )
+            
+                        db.commit()
+                        reply.append(f"✅ **Order placed!**\nOrder ID: {order_id}\nTotal: ₱{total:.2f}")
+                    else:
+                        reply.append("❌ I couldn't recognize the items you ordered. Please check the dish names.")
+            
+            # ---------------- ORDER STATUS ----------------
+            elif "status" in msg_lower:
+                order_id = re.findall(r"\b\d+\b", user_message)
+            
+                if not order_id:
+                    reply.append(
+                        "📦 **To check your order status:**\n"
+                        "• Type 'status <order_id>' to check a specific order.\n"
+                        "• Type 'status' to see your recent orders.\n"
+                        "💡 Tip: You can also type 'suggest' or 'recommend' to see popular dishes!"
+                    )
+            
+                if order_id:
+                    oid = int(order_id[0])
+                    cursor.execute(
+                        "SELECT status,total,created_at FROM orders WHERE id=%s AND username=%s",
+                        (oid, username)
+                    )
+                    order = cursor.fetchone()
+            
+                    if order:
+                        reply.append(
+                            f"📦 **Order {oid}**\n"
+                            f"- Status: {order['status']}\n"
+                            f"- Total: ₱{order['total']:.2f}\n"
+                            f"- Date: {order['created_at']}"
+                        )
+                    else:
+                        reply.append("❌ Order not found.")
+                else:
+                    cursor.execute("""
+                        SELECT id,status,total FROM orders
+                        WHERE username=%s
+                        ORDER BY created_at DESC
+                        LIMIT 3
+                    """, (username,))
+                    orders = cursor.fetchall()
+            
+                    if orders:
+                        reply.append("📦 **Your recent orders:**")
+                        for o in orders:
+                            reply.append(f"• Order {o['id']} — {o['status']} | ₱{o['total']:.2f}")
+                    else:
+                        reply.append("You have no recent orders.")
+            
+            # ---------------- RECOMMEND / SUGGEST ----------------
+            elif "recommend" in msg_lower or "suggest" in msg_lower:
+                reply.append("💡 **Here are some popular dishes:**")
+                # Top-selling items first
+                if sales:
+                    for i, top in enumerate(sales[:5], start=1):
+                        reply.append(f"{i}. {top['name']} (ordered {top['total_qty']} times)")
+                # If no sales data, show menu suggestions
+                else:
+                    for m in menu[:5]:
+                        reply.append(f"• {m['name']} ({m['category']}) — ₱{m['price']:.2f}")
 
-                if orders:
-                    reply.append("📦 **Your recent orders:**")
-                    for o in orders:
-                        reply.append(f"• Order {o['id']} — {o['status']} | ₱{o['total']:.2f}")
-                else:
-                    reply.append("You have no recent orders.")
 
         # ---------------- MENU ----------------
         elif "menu" in msg_lower:
@@ -230,11 +267,12 @@ def handle_customer_ai_chat(data, get_db_connection):
         else:
             reply.append(
                 "💡 **I can help you with:**\n"
-                "• Menu\n"
-                "• Order food\n"
-                "• Order status\n"
-                "• Review (Review 5 Amazing!)\n"
-                "• Feedback (Feedback Great service!)"
+                "• **Menu** — Type 'menu' to see the available dishes.\n"
+                "• **Order food** — Example: '2 Adobo, 1 Sinigang'\n"
+                "• **Repeat last order** — Type 'repeat last order'\n"
+                "• **Order status** — Example: 'status 123' to check a specific order, or 'status' to see recent orders\n"
+                "• **Review** — Example: 'Review 5 Amazing food' or '5 stars Amazing food'\n"
+                "• **Feedback** — Example: 'Feedback Great service!'"
             )
 
     except Exception:
@@ -246,4 +284,5 @@ def handle_customer_ai_chat(data, get_db_connection):
         db.close()
 
     return {"reply": "\n".join(reply)}
+
 
