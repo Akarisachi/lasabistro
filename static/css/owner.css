@@ -131,7 +131,7 @@ body.dark-mode #aiChatArea{
   background: #1e1e1e;
 }
 
-#aiChatArea{
+#aiChatArea, .bat{
   background-color: #ffffff;
 }
 #openAiBtn{
@@ -707,3 +707,4 @@ body.dark-mode ::-webkit-scrollbar-thumb {
   background: #555;
   border-radius: 4px;
 }
+
