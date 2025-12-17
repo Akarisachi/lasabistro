@@ -1,25 +1,26 @@
 # customer_app.py
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
+import mysql.connector
 from werkzeug.security import generate_password_hash, check_password_hash
 import time
 import random
 from datetime import datetime, timedelta
 from customer_ai import handle_customer_ai_chat
-from mailer import send_message
-import psycopg
-from psycopg.rows import dict_row
+from mailer import send_contact_email
 
 app = Flask(__name__, template_folder="main")  # if your HTML is in a folder called 'main'
 CORS(app)  # allow the frontend to talk to this server
 
 # DB connection helper - adjust credentials if necessary
 def get_db_connection():
-    return psycopg.connect(
-        "postgresql://restaurant_db_pj8q_user:hsImkcb315dSQsTsV7Ga1VUdebMzOw9d@dpg-d50morfgi27c73ap9510-a.oregon-postgres.render.com/restaurant_db_pj8q",
-        row_factory=dict_row
+    return mysql.connector.connect(
+        host="switchyard.proxy.rlwy.net",
+        port=39390,
+        user="root",             # replace if your Railway user is different
+        password="sXeDPzMNsNACCqmHxGXjHWyPgrpgELDX", # replace with your Railway DB password
+        database="railway"
     )
-
 @app.route('/')
 def home():
     return render_template('index.html') 
@@ -65,7 +66,7 @@ def signup():
 
     # Insert into DB (check duplicate username)
     db = get_db_connection()
-    cur = db.cursor()
+    cur = db.cursor(dictionary=True)
     try:
         # check existing username
         cur.execute("SELECT customer_id FROM customers WHERE username = %s", (username,))
@@ -103,7 +104,7 @@ def login():
         return jsonify({"status":"error","message":"Username and password required"}), 400
 
     db = get_db_connection()
-    cur = db.cursor()
+    cur = db.cursor(dictionary=True)
     try:
         cur.execute("SELECT customer_id, username, password_hash, address, contact FROM customers WHERE username = %s", (username,))
         user = cur.fetchone()
@@ -138,7 +139,7 @@ def get_user():
         return jsonify({"status":"error", "message":"Username is required"}), 400
 
     db = get_db_connection()
-    cur = db.cursor()
+    cur = db.cursor(dictionary=True)
     try:
         cur.execute(
             "SELECT customer_id, username, address, contact FROM customers WHERE username=%s",
@@ -391,7 +392,7 @@ def send_message():
         return jsonify({"success": False, "message": "Invalid data"}), 400
 
     try:
-        send_message(
+        send_contact_email(
             name=data.get("name"),
             customer_email=data.get("email"),
             message=data.get("message")
@@ -409,7 +410,4 @@ def send_message():
 
 if __name__ == "__main__":
     # Run on port 5001 for customer backend
-    app.run()
-
-
-
+    app.run(host="0.0.0.0", port=5001, debug=True)
