@@ -30,7 +30,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 def get_db_connection():
     return mysql.connector.connect(
         host="switchyard.proxy.rlwy.net",
-        port=3306,
+        port=39390,
         user="root",             # replace if your Railway user is different
         password="sXeDPzMNsNACCqmHxGXjHWyPgrpgELDX", # replace with your Railway DB password
         database="railway"
@@ -1200,3 +1200,4 @@ def customer_menu():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
